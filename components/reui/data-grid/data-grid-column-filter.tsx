@@ -13,7 +13,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
-import { CirclePlusIcon, CheckIcon } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Add01Icon, Tick01Icon } from "@hugeicons/core-free-icons"
 
 interface DataGridColumnFilterProps<TData, TValue> {
   column?: Column<TData, TValue>
@@ -45,7 +46,7 @@ function DataGridColumnFilter<TData, TValue>({
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm">
-          <CirclePlusIcon className="size-4" />
+          <HugeiconsIcon icon={Add01Icon} className="size-4" />
           {title}
           {selectedValues?.size > 0 && (
             <>
@@ -127,7 +128,7 @@ function DataGridColumnFilter<TData, TValue>({
                           : "opacity-50 [&_svg]:invisible"
                       )}
                     >
-                      <CheckIcon className="size-4" />
+                      <HugeiconsIcon icon={Tick01Icon} className="size-4" />
                     </div>
                     {option.icon && (
                       <option.icon className="text-muted-foreground mr-2 h-4 w-4" />

@@ -42,7 +42,7 @@ export default function RootLayout({
         <ThemeProvider>
           <TooltipProvider delayDuration={0}>
             {children}
-            <Toaster richColors />
+            <Toaster richColors position="top-center" />
           </TooltipProvider>
         </ThemeProvider>
       </body>

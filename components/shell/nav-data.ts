@@ -1,24 +1,24 @@
-import * as React from "react";
 import {
-  BadgeCheck,
-  BarChart3,
-  Briefcase,
-  ClipboardList,
-  Clock3,
-  FileText,
-  Folder,
-  Globe2,
-  HelpCircle,
-  LayoutDashboard,
-  Settings,
-  Sparkles,
-  Star,
-  Users,
-} from "lucide-react";
+  CheckmarkBadge01Icon,
+  BarChartIcon,
+  Briefcase01Icon,
+  ClipboardIcon,
+  Clock01Icon,
+  LegalDocumentIcon,
+  Folder01Icon,
+  GlobeIcon,
+  HelpCircleIcon,
+  DashboardSquare01Icon,
+  Settings01Icon,
+  MagicWand01Icon,
+  FavouriteIcon,
+  UserGroupIcon,
+} from "@hugeicons/core-free-icons"
 
 export type NavItem = {
   label: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: any;
   href: string;
   isActive?: boolean;
   children?: NavItem[];
@@ -67,9 +67,9 @@ export const sidebarData: SidebarData = {
       title: "Overview",
       defaultOpen: true,
       items: [
-        { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", isActive: true },
-        { label: "Tasks", icon: ClipboardList, href: "#" },
-        { label: "Roadmap", icon: BarChart3, href: "#" },
+        { label: "Dashboard", icon: DashboardSquare01Icon, href: "/dashboard", isActive: true },
+        { label: "Tasks", icon: ClipboardIcon, href: "#" },
+        { label: "Roadmap", icon: BarChartIcon, href: "#" },
       ],
     },
     {
@@ -78,11 +78,11 @@ export const sidebarData: SidebarData = {
       items: [
         {
           label: "Active Projects",
-          icon: Briefcase,
+          icon: Briefcase01Icon,
           href: "#",
           children: [
-            { label: "Project Alpha", icon: FileText, href: "#" },
-            { label: "Project Beta", icon: FileText, href: "#" },
+            { label: "Project Alpha", icon: LegalDocumentIcon, href: "#" },
+            { label: "Project Beta", icon: LegalDocumentIcon, href: "#" },
           ],
         },
       ],
@@ -91,18 +91,18 @@ export const sidebarData: SidebarData = {
       title: "Team",
       defaultOpen: false,
       items: [
-        { label: "Members", icon: Users, href: "#" },
-        { label: "Sprints", icon: Clock3, href: "#" },
-        { label: "Approvals", icon: BadgeCheck, href: "#" },
-        { label: "Reviews", icon: Star, href: "#" },
+        { label: "Members", icon: UserGroupIcon, href: "#" },
+        { label: "Sprints", icon: Clock01Icon, href: "#" },
+        { label: "Approvals", icon: CheckmarkBadge01Icon, href: "#" },
+        { label: "Reviews", icon: FavouriteIcon, href: "#" },
       ],
     },
   ],
   footerGroup: {
     title: "Support",
     items: [
-      { label: "Help Center", icon: HelpCircle, href: "#" },
-      { label: "Settings", icon: Settings, href: "#" },
+      { label: "Help Center", icon: HelpCircleIcon, href: "#" },
+      { label: "Settings", icon: Settings01Icon, href: "#" },
     ],
   },
   user: {

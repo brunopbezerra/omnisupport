@@ -72,7 +72,7 @@ export function AssignSelect({
       <Select
         value={assignedProfile?.id ?? 'unassigned'}
         onValueChange={handleChange}
-        disabled={isUpdating}
+        disabled={isUpdating || ticketStatus === 'resolved'}
       >
         <SelectTrigger
           className={`${triggerHeight} border-input bg-background shadow-sm w-fit min-w-[100px] gap-1.5 ${isUpdating ? 'opacity-60' : ''}`}

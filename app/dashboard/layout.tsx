@@ -2,39 +2,34 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
+import { HugeiconsIcon } from '@hugeicons/react'
 import {
-  CheckCircle2,
-  ChevronsUpDown,
-  Inbox,
-  LogOut,
-  Settings,
-  User,
-  Users,
-  Headset,
-} from 'lucide-react'
+  ArrowRight01Icon,
+  Building03Icon,
+  CustomerService01Icon,
+  InboxIcon,
+  Logout01Icon,
+  Settings01Icon,
+  UserIcon,
+  UserSettings01Icon,
+} from '@hugeicons/core-free-icons'
 
 import { ModeToggle } from '@/components/mode-toggle'
+import { WorkspaceSwitcher } from '@/components/workspace-switcher'
+import { WorkspaceProvider, useWorkspace } from '@/components/providers/workspace-provider'
+import { SidebarHealthMeter } from '@/components/health-ring'
+import { useWorkspaceHealth } from '@/hooks/use-workspace-health'
+import { supabase } from '@/lib/supabase/client'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
   BreadcrumbLink,
 } from '@/components/ui/breadcrumb'
-import { ChevronRight } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
   SidebarContent,
@@ -52,80 +47,47 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 
-// --- Dados estáticos do Backoffice de Helpdesk ---
-
-const APP = {
-  name: 'Produtools',
-  description: 'Helpdesk SaaS',
-} as const
+// ─── Static nav data ──────────────────────────────────────────
+const APP = { name: 'Produtools', description: 'Helpdesk SaaS' } as const
 
 const NAV_MAIN = [
+  { label: 'Atendimentos', href: '/dashboard', icon: InboxIcon },
+] as const
+
+const NAV_SETTINGS = [
   {
-    label: 'Caixa de Entrada',
-    href: '/dashboard/inbox',
-    icon: Inbox,
+    label: 'Configurações do Workspace',
+    href: '/dashboard/settings/workspace',
+    icon: Building03Icon,
+    adminOnly: true,
   },
   {
-    label: 'Resolvidos',
-    href: '/dashboard/resolved',
-    icon: CheckCircle2,
+    label: 'Gestão de Equipe',
+    href: '/dashboard/settings/team',
+    icon: UserSettings01Icon,
+    adminOnly: true,
   },
   {
-    label: 'Clientes',
-    href: '/dashboard/customers',
-    icon: Users,
+    label: 'Meu Perfil',
+    href: '/dashboard/settings/profile',
+    icon: UserIcon,
+    adminOnly: false,
   },
 ] as const
 
-const NAV_FOOTER = [
-  {
-    label: 'Configurações',
-    href: '/dashboard/settings',
-    icon: Settings,
-  },
-] as const
-
-const MOCK_USER = {
-  name: 'Admin Produtools',
-  email: 'admin@produtools.com',
-  avatar: '',
-} as const
-
-// --- Sub-componente: Logo na sidebar ---
-function SidebarLogo() {
-  return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <SidebarMenuButton size="lg" asChild>
-          <Link href="/dashboard">
-            <div className="flex aspect-square size-8 items-center justify-center rounded-sm bg-primary">
-              <Headset className="size-4 text-primary-foreground" />
-            </div>
-            <div className="flex flex-col gap-0.5 leading-none">
-              <span className="font-semibold">{APP.name}</span>
-              <span className="text-xs text-muted-foreground">{APP.description}</span>
-            </div>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  )
-}
-
-// --- Sub-componente: Item de navegação ---
+// ─── NavItem ──────────────────────────────────────────────────
 function NavItem({
   item,
   isActive,
 }: {
-  item: { label: string; href: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>> }
+  item: { label: string; href: string; icon: any }
   isActive: boolean
 }) {
-  const Icon = item.icon
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive}>
         <Link href={item.href}>
-          <Icon className="size-4" />
+          <HugeiconsIcon icon={item.icon} className="size-4" />
           <span>{item.label}</span>
         </Link>
       </SidebarMenuButton>
@@ -133,83 +95,124 @@ function NavItem({
   )
 }
 
-// --- Sub-componente: Usuário no footer com dropdown ---
+// ─── NavUser (identity + logout only — no profile link) ───────
 function NavUser() {
-  const initials = MOCK_USER.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
+  const router = useRouter()
+  const { currentUser } = useWorkspace()
+
+  const name = currentUser?.full_name ?? '...'
+  const email = currentUser?.email ?? ''
+  const avatar = currentUser?.avatar_url ?? ''
+  const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            >
-              <Avatar className="size-8 rounded-lg">
-                <AvatarImage src={MOCK_USER.avatar} alt={MOCK_USER.name} />
-                <AvatarFallback className="rounded-lg text-xs">{initials}</AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{MOCK_USER.name}</span>
-                <span className="truncate text-xs text-muted-foreground">{MOCK_USER.email}</span>
-              </div>
-              <ChevronsUpDown className="ml-auto size-4" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side="top"
-            align="end"
-            sideOffset={4}
+        <div className="flex items-center gap-3 px-2 py-2">
+          <Avatar className="size-8 rounded-lg shrink-0">
+            <AvatarImage src={avatar} alt={name} />
+            <AvatarFallback className="rounded-lg text-xs">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+            <span className="truncate font-medium">{name}</span>
+            <span className="truncate text-xs text-muted-foreground">{email}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7 shrink-0 text-muted-foreground hover:text-destructive"
+            onClick={handleSignOut}
+            title="Sair"
           >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="size-8 rounded-lg">
-                  <AvatarImage src={MOCK_USER.avatar} alt={MOCK_USER.name} />
-                  <AvatarFallback className="rounded-lg text-xs">{initials}</AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{MOCK_USER.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">{MOCK_USER.email}</span>
-                </div>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 size-4" />
-              Meu Perfil
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive focus:text-destructive">
-              <LogOut className="mr-2 size-4" />
-              Sair
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <HugeiconsIcon icon={Logout01Icon} className="size-4" />
+          </Button>
+        </div>
       </SidebarMenuItem>
     </SidebarMenu>
   )
 }
 
-// --- Sub-componente: Sidebar principal ---
+// ─── WorkspaceHealthMeter ─────────────────────────────────────
+function WorkspaceHealthMeter() {
+  const health = useWorkspaceHealth()
+  if (!health) return null
+  return <SidebarHealthMeter health={health} />
+}
+
+// ─── AppSidebar ───────────────────────────────────────────────
 function AppSidebar({ pathname }: { pathname: string }) {
+  const { currentUser, activeOrg } = useWorkspace()
+  const isSuperAdmin = currentUser?.role === 'super-admin'
+  const isAdmin = currentUser?.role === 'admin' || isSuperAdmin
+
+  const visibleSettings = NAV_SETTINGS.filter(item => !item.adminOnly || isAdmin)
+
   return (
     <Sidebar>
       <SidebarHeader>
-        <SidebarLogo />
+        {isSuperAdmin ? (
+          <WorkspaceSwitcher />
+        ) : (
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild>
+                <Link href="/dashboard">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-sm bg-primary overflow-hidden shrink-0">
+                    {activeOrg?.logo_url ? (
+                      <img src={activeOrg.logo_url} alt={activeOrg.name} className="size-full object-cover" />
+                    ) : (
+                      <HugeiconsIcon icon={CustomerService01Icon} className="size-4 text-primary-foreground" />
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-0.5 leading-none">
+                    <span className="font-semibold">{activeOrg?.name ?? APP.name}</span>
+                    <span className="text-xs text-muted-foreground">{APP.description}</span>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        )}
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Navegação principal */}
+        {/* ── Atendimento ────────────────────────────────── */}
         <SidebarGroup>
-          <SidebarGroupLabel>Atendimento</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            <HugeiconsIcon icon={CustomerService01Icon} className="size-3.5 mr-1.5" />
+            Atendimento
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV_MAIN.map((item) => (
+              {NAV_MAIN.map(item => (
+                <NavItem
+                  key={item.href}
+                  item={item}
+                  isActive={
+                    item.href === '/dashboard'
+                      ? pathname === '/dashboard' || (pathname.startsWith('/dashboard/') && !pathname.startsWith('/dashboard/settings'))
+                      : pathname === item.href || pathname.startsWith(item.href + '/')
+                  }
+                />
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* ── Configurações ──────────────────────────────── */}
+        <SidebarGroup>
+          <SidebarGroupLabel>
+            <HugeiconsIcon icon={Settings01Icon} className="size-3.5 mr-1.5" />
+            Configurações
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {visibleSettings.map(item => (
                 <NavItem
                   key={item.href}
                   item={item}
@@ -219,24 +222,10 @@ function AppSidebar({ pathname }: { pathname: string }) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {/* Navegação de rodapé (dentro da sidebar) */}
-        <SidebarGroup className="mt-auto">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {NAV_FOOTER.map((item) => (
-                <NavItem
-                  key={item.href}
-                  item={item}
-                  isActive={pathname === item.href}
-                />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>
+        <WorkspaceHealthMeter />
         <NavUser />
       </SidebarFooter>
 
@@ -245,38 +234,52 @@ function AppSidebar({ pathname }: { pathname: string }) {
   )
 }
 
-// --- Componente principal: Layout do Dashboard ---
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
+// ─── Breadcrumb resolution ────────────────────────────────────
+const ALL_NAV = [
+  ...NAV_SETTINGS,
+  ...NAV_MAIN,
+]
 
-  // Gera o breadcrumb a partir da rota ativa
+// ─── Inner layout (needs WorkspaceContext) ────────────────────
+function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const { currentUser, loading } = useWorkspace()
+
+  React.useEffect(() => {
+    if (!loading && !currentUser) {
+      router.replace('/login')
+    }
+  }, [loading, currentUser, router])
+
+  if (loading || !currentUser) {
+    return null
+  }
+
   const activeNavItem =
-    [...NAV_MAIN, ...NAV_FOOTER].find(
-      (item) => pathname === item.href || pathname.startsWith(item.href + '/')
-    ) ?? { label: 'Dashboard', href: '/dashboard' }
+    ALL_NAV.find(
+      item => pathname === item.href || pathname.startsWith(item.href + '/')
+    ) ?? { label: 'Dashboard', href: '/dashboard', icon: CustomerService01Icon }
 
   return (
     <SidebarProvider className="h-svh overflow-hidden">
       <AppSidebar pathname={pathname} />
-      <SidebarInset>
-        {/* Header Global */}
+      <SidebarInset className="min-w-0">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
-          {/* Logo mobile (visível quando sidebar fechada) */}
           <Link href="/dashboard" className="flex items-center gap-2 md:hidden">
             <div className="flex aspect-square size-7 items-center justify-center rounded-sm bg-primary">
-              <Headset className="size-3.5 text-primary-foreground" />
+              <HugeiconsIcon icon={CustomerService01Icon} className="size-3.5 text-primary-foreground" />
             </div>
             <span className="font-semibold text-sm">{APP.name}</span>
           </Link>
-          {/* Breadcrumb (desktop) */}
           <Breadcrumb className="hidden md:block">
             <BreadcrumbList className="gap-0.5 sm:gap-1">
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
                   <Button variant="ghost" size="sm" className="h-8 gap-2 px-2" asChild>
                     <Link href="/dashboard">
-                      <Headset className="size-3.5" />
+                      <HugeiconsIcon icon={CustomerService01Icon} className="size-3.5" />
                       Dashboard
                     </Link>
                   </Button>
@@ -285,15 +288,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {activeNavItem.label !== 'Dashboard' && (
                 <>
                   <BreadcrumbSeparator>
-                    <ChevronRight className="size-3.5" />
+                    <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
                   </BreadcrumbSeparator>
                   <BreadcrumbItem>
-                    <BreadcrumbPage asChild>
-                      <Button variant="secondary" size="sm" className="h-8 gap-2 px-2 pointer-events-none">
-                        {activeNavItem.icon && <activeNavItem.icon className="size-3.5" />}
-                        {activeNavItem.label}
-                      </Button>
-                    </BreadcrumbPage>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="h-8 gap-2 px-2 pointer-events-none"
+                      aria-current="page"
+                    >
+                      {activeNavItem.icon && (
+                        <HugeiconsIcon icon={activeNavItem.icon} className="size-3.5" />
+                      )}
+                      {activeNavItem.label}
+                    </Button>
                   </BreadcrumbItem>
                 </>
               )}
@@ -304,11 +312,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* Área principal — recebe os children das páginas */}
-        <main className="flex flex-1 flex-col gap-6 p-4 lg:p-6 bg-slate-50/50 dark:bg-background min-h-0">
+        <main className="flex flex-1 flex-col gap-6 p-4 lg:p-6 bg-background min-h-0 overflow-auto">
           {children}
         </main>
       </SidebarInset>
     </SidebarProvider>
+  )
+}
+
+// ─── Public layout export (wraps with WorkspaceProvider) ──────
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <WorkspaceProvider>
+      <DashboardLayoutInner>{children}</DashboardLayoutInner>
+    </WorkspaceProvider>
   )
 }

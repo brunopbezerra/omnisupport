@@ -59,6 +59,26 @@ const ClientSafeDate = ({ date, formatStr = 'dd/MM/yyyy' }: { date: string; form
   return <span>{format(new Date(date), formatStr)}</span>
 }
 
+function SLABadge({ createdAt }: { createdAt: string }) {
+  const [now, setNow] = React.useState(() => Date.now())
+  React.useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const totalMinutes = Math.floor((now - new Date(createdAt).getTime()) / 60_000)
+  const hours = Math.floor(totalMinutes / 60)
+  const mins = totalMinutes % 60
+  const label = hours > 0 ? `${hours}h${mins > 0 ? ` ${mins}m` : ''}` : `${totalMinutes}m`
+  const variant = hours >= 8 ? 'destructive-muted' : hours >= 4 ? 'warning-muted' : 'success-muted'
+
+  return (
+    <Badge variant={variant} className="rounded-full px-2.5 py-0.5 font-medium tabular-nums">
+      {label}
+    </Badge>
+  )
+}
+
 export interface TicketProfile {
   id: string
   full_name: string
@@ -80,6 +100,7 @@ export interface Ticket {
   assigned_to?: string | null
   assigned_to_profile?: TicketProfile | null
   created_at: string
+  updated_at?: string
   categories?: Category[]
 }
 
@@ -181,6 +202,16 @@ export function makeColumns(
       },
     },
     {
+      id: 'sla',
+      header: 'SLA',
+      meta: { className: 'w-[90px]' },
+      cell: ({ row }) => {
+        const ticket = row.original
+        if (ticket.status === 'resolved') return null
+        return <SLABadge createdAt={ticket.created_at} />
+      },
+    },
+    {
       accessorKey: 'created_at',
       header: 'Data',
       meta: { className: 'w-[120px]' },
@@ -247,6 +278,7 @@ interface DataTableProps<TData, TValue> {
   data: TData[]
   onOpenTicket?: (ticket: Ticket) => void
   onUpdateTicket?: (ticketId: string, updates: Partial<Ticket>) => void
+  onFilteredRowsChange?: (rows: Ticket[]) => void
   layout?: 'table' | 'list'
   selectedId?: string
   // Passed from page for inline assign
@@ -259,6 +291,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   onOpenTicket,
+  onFilteredRowsChange,
   layout = 'table',
   selectedId,
   agents = [],
@@ -268,6 +301,13 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const { table, filters, handleFiltersChange, selectedTicket, isSheetOpen, setIsSheetOpen, columnFilters } =
     useTicketTable({ data, columns, onOpenTicket, onUpdateTicket })
+
+  // Notify parent whenever the filtered result set changes (for export)
+  const filteredRows = table.getFilteredRowModel().rows
+  React.useEffect(() => {
+    onFilteredRowsChange?.(filteredRows.map(r => r.original as Ticket))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredRows.length, columnFilters])
 
   const noResults = table.getRowModel().rows.length === 0
   const isFiltered = columnFilters.length > 0
@@ -328,7 +368,7 @@ export function DataTable<TData, TValue>({
 function TableView({ table, columnsCount }: { table: any; columnsCount: number }) {
   return (
     <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-      <Table>
+      <Table className="min-w-[640px]">
         <TableHeader>
           {table.getHeaderGroups().map((group: any) => (
             <TableRow key={group.id}>
@@ -382,6 +422,9 @@ function ListView({ table, selectedId, agents, currentUserId }: {
             const ticket = row.original as Ticket
             const config = statusMap[ticket.status] || { label: ticket.status, icon: null, variant: 'default' }
             const isSelected = selectedId === ticket.id
+            const lastActivity = ticket.updated_at ?? ticket.created_at
+            const isStale = ticket.status !== 'resolved' &&
+              (Date.now() - new Date(lastActivity).getTime()) > 12 * 60 * 60 * 1000
             return (
               <button
                 key={row.id}
@@ -394,10 +437,17 @@ function ListView({ table, selectedId, agents, currentUserId }: {
                       <span className="font-semibold truncate text-foreground">{ticket.subject}</span>
                       <CategoryBadges categories={ticket.categories || []} />
                     </div>
-                  <Badge variant={config.variant} className="text-[10px] px-2 py-0.5 shrink-0 font-semibold gap-1 rounded-full">
-                    {config.icon && <span className="scale-75 shrink-0">{config.icon}</span>}
-                    {config.label}
-                  </Badge>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isStale && (
+                      <Badge variant="destructive-muted" className="text-[10px] px-2 py-0.5 font-semibold rounded-full">
+                        Inativo
+                      </Badge>
+                    )}
+                    <Badge variant={config.variant} className="text-[10px] px-2 py-0.5 font-semibold gap-1 rounded-full">
+                      {config.icon && <span className="scale-75 shrink-0">{config.icon}</span>}
+                      {config.label}
+                    </Badge>
+                  </div>
                 </div>
                 <div className="flex w-full items-center justify-between gap-4 mt-1">
                   <span className="text-xs text-muted-foreground truncate flex-1">{ticket.customer_email}</span>

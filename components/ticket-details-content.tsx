@@ -40,6 +40,18 @@ import {
   CollapseIcon
 } from "@hugeicons/core-free-icons"
 
+import { cn } from '@/lib/utils'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
@@ -52,6 +64,7 @@ import { CategorySelector } from './category-selector'
 import type { Ticket, Category } from '@/app/dashboard/data-table'
 import { useTicketDetails, type Message, type Attachment, type TicketEvent } from '@/hooks/use-ticket-details'
 import { useAgents } from '@/hooks/use-agents'
+import { useWorkspace } from '@/components/providers/workspace-provider'
 import type { Agent } from '@/hooks/use-agents'
 
 // ─── Status map ──────────────────────────────────────────────────────────────
@@ -68,12 +81,16 @@ interface TicketDetailsContentProps {
   ticket: Ticket | null
   onClose?: () => void
   onUpdateTicket?: (ticketId: string, updates: Partial<Ticket>) => void
+  onConversationExpand?: (expanded: boolean) => void
 }
 
-export function TicketDetailsContent({ ticket, onClose, onUpdateTicket }: TicketDetailsContentProps) {
-  const { agents, currentUser } = useAgents()
+export function TicketDetailsContent({ ticket, onClose, onUpdateTicket, onConversationExpand }: TicketDetailsContentProps) {
+  const { agents } = useAgents()
+  const { currentUser } = useWorkspace()
   const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar()
   const [sidebarWasOpen, setSidebarWasOpen] = useState(false)
+  const [isConversationExpanded, setIsConversationExpanded] = useState(false)
+  const [sidebarWasOpenForConv, setSidebarWasOpenForConv] = useState(false)
 
   const {
     messages,
@@ -100,34 +117,47 @@ export function TicketDetailsContent({ ticket, onClose, onUpdateTicket }: Ticket
 
   const toggleHistory = () => {
     if (!isHistoryExpanded) {
-      // Opening...
       setSidebarWasOpen(sidebarOpen)
       setSidebarOpen(false)
     } else {
-      // Closing...
-      if (sidebarWasOpen) {
-        setSidebarOpen(true)
-      }
+      if (sidebarWasOpen) setSidebarOpen(true)
     }
     setIsHistoryExpanded(!isHistoryExpanded)
   }
 
-  // Restore sidebar on unmount if it was collapsed by history
+  const toggleConversation = () => {
+    const expanding = !isConversationExpanded
+    if (expanding) {
+      setSidebarWasOpenForConv(sidebarOpen)
+      setSidebarOpen(false)
+    } else {
+      if (sidebarWasOpenForConv) setSidebarOpen(true)
+    }
+    setIsConversationExpanded(expanding)
+    onConversationExpand?.(expanding)
+  }
+
+  // Restore sidebar on unmount if it was collapsed by history or conversation
   useEffect(() => {
     return () => {
-      // We use the variables from the closure. 
-      // Note: isHistoryExpanded and sidebarWasOpen here will be from the LAST RENDER before unmount.
-      if (isHistoryExpanded && sidebarWasOpen) {
-        setSidebarOpen(true)
-      }
+      if (isHistoryExpanded && sidebarWasOpen) setSidebarOpen(true)
     }
   }, [isHistoryExpanded, sidebarWasOpen, setSidebarOpen])
+
+  useEffect(() => {
+    return () => {
+      if (isConversationExpanded && sidebarWasOpenForConv) setSidebarOpen(true)
+    }
+  }, [isConversationExpanded, sidebarWasOpenForConv, setSidebarOpen])
 
   return (
     <div className="flex-1 flex gap-4 min-w-0 min-h-0 h-full">
 
       {/* ── Main Details Card ── */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 border rounded-xl bg-card shadow-sm relative overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className={cn(
+        "flex flex-col min-w-0 min-h-0 border rounded-xl bg-card shadow-sm relative overflow-hidden animate-in zoom-in-95 duration-200",
+        isConversationExpanded ? "w-[300px] lg:w-[340px] shrink-0" : "flex-1"
+      )}>
         
         {/* Close Button placed at top-right inside the details card */}
         {onClose && (
@@ -148,74 +178,78 @@ export function TicketDetailsContent({ ticket, onClose, onUpdateTicket }: Ticket
           </TooltipProvider>
         )}
 
-        <div className="flex-1 flex flex-col p-6 overflow-hidden">
-          <div className="flex flex-1 flex-col gap-5 overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto min-h-0 p-6">
+          <div className="flex flex-col gap-5">
 
             {/* ── Header ── */}
-              <div className="flex flex-col gap-3 shrink-0">
-                <div className="flex flex-col gap-1 pr-8">
-                  <h2 className="text-xl font-bold leading-tight line-clamp-2">{ticket.subject}</h2>
+            <div className="flex flex-col gap-3 shrink-0">
+              <div className="flex flex-col gap-1 pr-8">
+                <h2 className="text-xl font-bold leading-tight line-clamp-2">{ticket.subject}</h2>
+              </div>
+
+              <div className="flex flex-col gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                  <span className="font-semibold text-foreground/70 text-xs">Ticket ID:</span>
+                  <span className="text-xs">{ticket.ref_token}</span>
                 </div>
-
-                <div className="flex flex-col gap-2 shrink-0">
-                  <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                    <span className="font-semibold text-foreground/70 text-xs">Ticket ID:</span>
-                    <span className="text-xs">{ticket.ref_token}</span>
-                  </div>
-                  {ticket.id && (
-                    <div className="flex flex-col gap-1.5 mt-1 border-t pt-3">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Categorias:</span>
-                      <CategorySelector 
-                        ticketId={ticket.id} 
-                        selectedCategories={ticketCategories} 
-                        onCategoriesChange={(cats) => {
-                          setTicketCategories(cats)
-                          onUpdateTicket?.(ticket.id, { categories: cats })
-                        }} 
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between flex-wrap gap-2 mt-1">
-                  <Badge variant={statusConfig.variant} className="text-xs rounded-full gap-1.5 px-2.5 py-0.5 font-medium">
-                    {statusConfig.icon}
-                    {statusConfig.label}
-                  </Badge>
-
-                  <div className="flex items-center gap-2">
-                    <AssignSelect
+                {ticket.id && (
+                  <div className="flex flex-col gap-1.5 mt-1 border-t pt-3">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Categorias:</span>
+                    <CategorySelector
                       ticketId={ticket.id}
-                      ticketStatus={ticket.status}
-                      assignedProfile={assignedProfile}
-                      agents={agents}
-                      currentUserId={currentUser?.id}
-                      onAssigned={(id: string | null, profile: Agent | null) => {
-                        handleAssignmentChanged(profile)
-                        onUpdateTicket?.(ticket.id, { 
-                          assigned_to: id, 
-                          assigned_to_profile: profile,
-                          status: (id && ticket.status === 'open') ? 'in_progress' : ticket.status
-                        })
+                      selectedCategories={ticketCategories}
+                      onCategoriesChange={(cats) => {
+                        setTicketCategories(cats)
+                        onUpdateTicket?.(ticket.id, { categories: cats })
                       }}
-                    />
-
-                    <StatusActions
-                      status={ticket.status}
-                      onUpdateStatus={(newStatus) => {
-                        const agentId = newStatus === 'in_progress' ? currentUser?.id : undefined
-                        const agentProfile = newStatus === 'in_progress' ? agents.find(a => a.id === currentUser?.id) : undefined
-                        handleUpdateStatus(newStatus, agentId)
-                        onUpdateTicket?.(ticket.id, { 
-                          status: newStatus,
-                          ...(agentId ? { assigned_to: agentId, assigned_to_profile: agentProfile } : {})
-                        })
-                      }}
-                      isLoading={isUpdatingStatus}
                     />
                   </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between flex-wrap gap-2 mt-1">
+                <Badge variant={statusConfig.variant} className="text-xs rounded-full gap-1.5 px-2.5 py-0.5 font-medium">
+                  {statusConfig.icon}
+                  {statusConfig.label}
+                </Badge>
+
+                <div className="flex items-center gap-2">
+                  <AssignSelect
+                    ticketId={ticket.id}
+                    ticketStatus={ticket.status}
+                    assignedProfile={assignedProfile}
+                    agents={agents}
+                    currentUserId={currentUser?.id}
+                    onAssigned={(id: string | null, profile: Agent | null) => {
+                      handleAssignmentChanged(profile)
+                      onUpdateTicket?.(ticket.id, {
+                        assigned_to: id,
+                        assigned_to_profile: profile,
+                        status: (id && ticket.status === 'open') ? 'in_progress' : ticket.status
+                      })
+                    }}
+                  />
+
+                  <StatusActions
+                    status={ticket.status}
+                    hasAgentReply={messages.some(m => m.sender_role === 'agent')}
+                    onUpdateStatus={(newStatus) => {
+                      // Reopening a ticket that already has an assigned agent → keep it in_progress
+                      const effectiveStatus = (newStatus === 'open' && ticket.assigned_to) ? 'in_progress' : newStatus
+                      const agentId = newStatus === 'in_progress' ? currentUser?.id : undefined
+                      const agentProfile = agentId ? agents.find(a => a.id === currentUser?.id) : undefined
+                      handleUpdateStatus(effectiveStatus, agentId)
+                      onUpdateTicket?.(ticket.id, {
+                        status: effectiveStatus,
+                        ...(agentId ? { assigned_to: agentId, assigned_to_profile: agentProfile } : {})
+                      })
+                    }}
+                    isLoading={isUpdatingStatus}
+                  />
                 </div>
               </div>
+            </div>
 
             <Separator />
 
@@ -224,22 +258,34 @@ export function TicketDetailsContent({ ticket, onClose, onUpdateTicket }: Ticket
 
             <Separator />
 
-            {/* ── Message History ── */}
-            <div className="flex flex-col gap-2 min-h-0 flex-1">
-              <h3 className="font-semibold text-sm text-foreground shrink-0">Histórico de Conversa</h3>
-              <div className="flex-1 relative min-h-0">
+            {/* ── Message History (hidden when conversation panel is open) ── */}
+            {!isConversationExpanded && (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm text-foreground">Histórico de Conversa</h3>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="size-6 rounded-full text-muted-foreground hover:text-foreground" onClick={toggleConversation}>
+                          <HugeiconsIcon icon={ExpandIcon} className="size-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Expandir conversa</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <MessageHistory messages={messages} isLoading={isLoadingDetails} />
               </div>
-            </div>
+            )}
 
             {/* ── Activity Timeline ── */}
             <div className="flex flex-col gap-2 shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                   <HugeiconsIcon icon={Clock02Icon} className="size-3.5 text-muted-foreground" />
+                  <HugeiconsIcon icon={Clock02Icon} className="size-3.5 text-muted-foreground" />
                   <h3 className="font-semibold text-sm text-foreground">Histórico de Atividade</h3>
                 </div>
-                
+
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -258,8 +304,45 @@ export function TicketDetailsContent({ ticket, onClose, onUpdateTicket }: Ticket
 
             {/* ── Attachments ── */}
             {attachments.length > 0 && <AttachmentList attachments={attachments} />}
+          </div>
+          </div>
 
-            {/* ── Reply Form ── */}
+          {/* ── Reply Form (pinned; hidden when conversation panel is open) ── */}
+          {!isConversationExpanded && (
+            <div className="shrink-0 border-t px-6 py-4">
+              <ReplyForm
+                content={replyContent}
+                onChange={setReplyContent}
+                onSubmit={handleSubmitResponse}
+                isSubmitting={isSubmitting}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Expanded Conversation Panel ── */}
+      {isConversationExpanded && (
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 border rounded-xl bg-card shadow-sm overflow-hidden animate-in slide-in-from-right-4 duration-200">
+          <div className="shrink-0 flex items-center justify-between p-4 border-b bg-muted/30">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-sm text-foreground">Histórico de Conversa</h3>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="size-7 rounded-full text-muted-foreground hover:bg-muted" onClick={toggleConversation}>
+                    <HugeiconsIcon icon={CollapseIcon} className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Fechar conversa</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+          <div className="flex-1 min-h-0 flex flex-col p-4">
+            <MessageHistory messages={messages} isLoading={isLoadingDetails} expanded />
+          </div>
+          <div className="shrink-0 border-t px-6 py-4">
             <ReplyForm
               content={replyContent}
               onChange={setReplyContent}
@@ -268,7 +351,7 @@ export function TicketDetailsContent({ ticket, onClose, onUpdateTicket }: Ticket
             />
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── Expanded History Panel ── */}
       {isHistoryExpanded && (
@@ -302,8 +385,9 @@ export function TicketDetailsContent({ ticket, onClose, onUpdateTicket }: Ticket
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
-function StatusActions({ status, onUpdateStatus, isLoading }: {
+function StatusActions({ status, hasAgentReply, onUpdateStatus, isLoading }: {
   status: string
+  hasAgentReply: boolean
   onUpdateStatus: (s: string) => void
   isLoading: boolean
 }) {
@@ -317,39 +401,86 @@ function StatusActions({ status, onUpdateStatus, isLoading }: {
           disabled={isLoading}
           className="rounded-full border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300 gap-1.5"
         >
-           <HugeiconsIcon icon={CustomerService01Icon} className="size-3.5" strokeWidth={2} />
+          <HugeiconsIcon icon={CustomerService01Icon} className="size-3.5" strokeWidth={2} />
           Atender
         </Button>
       )}
+
       {status !== 'resolved' && (
-        <Button
-          size="sm"
-          onClick={() => onUpdateStatus('resolved')}
-          disabled={isLoading}
-          className="rounded-full border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-300"
-        >
-          {isLoading ? (
-            <HugeiconsIcon icon={Loading03Icon} className="size-3 animate-spin" />
-          ) : (
-            <HugeiconsIcon icon={Tick02Icon} className="size-3.5" strokeWidth={2.5} />
-          )}
-          Resolver
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              size="sm"
+              disabled={isLoading}
+              className="rounded-full border-green-200 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-300"
+            >
+              {isLoading ? (
+                <HugeiconsIcon icon={Loading03Icon} className="size-3 animate-spin" />
+              ) : (
+                <HugeiconsIcon icon={Tick02Icon} className="size-3.5" strokeWidth={2.5} />
+              )}
+              Resolver
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Resolver chamado?</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="flex flex-col gap-2">
+                  <span>Confirme que este chamado foi resolvido e pode ser encerrado.</span>
+                  {!hasAgentReply && (
+                    <span className="text-warning font-medium">
+                      Atenção: nenhuma resposta foi registrada neste chamado.
+                    </span>
+                  )}
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={() => onUpdateStatus('resolved')}>
+                Sim, resolver
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
+
       {status === 'resolved' && (
-        <Button
-          size="sm"
-          onClick={() => onUpdateStatus('open')}
-          disabled={isLoading}
-          className="rounded-full border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:text-orange-800 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-300"
-        >
-          {isLoading ? (
-            <HugeiconsIcon icon={Loading03Icon} className="size-3 animate-spin" />
-          ) : (
-            <HugeiconsIcon icon={ArrowTurnBackwardIcon} className="size-3.5" strokeWidth={2.5} />
-          )}
-          Reabrir
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              size="sm"
+              disabled={isLoading}
+              className="rounded-full border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:text-orange-800 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-300"
+            >
+              {isLoading ? (
+                <HugeiconsIcon icon={Loading03Icon} className="size-3 animate-spin" />
+              ) : (
+                <HugeiconsIcon icon={ArrowTurnBackwardIcon} className="size-3.5" strokeWidth={2.5} />
+              )}
+              Reabrir
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reabrir chamado?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja reabrir este chamado?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                variant="outline"
+                className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 hover:text-orange-800 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-300"
+                onClick={() => onUpdateStatus('open')}
+              >
+                Sim, reabrir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   )
@@ -374,7 +505,7 @@ function TicketInfo({ customerEmail, createdAt }: { customerEmail: string; creat
   )
 }
 
-function MessageHistory({ messages, isLoading }: { messages: Message[]; isLoading: boolean }) {
+function MessageHistory({ messages, isLoading, expanded = false }: { messages: Message[]; isLoading: boolean; expanded?: boolean }) {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -382,7 +513,10 @@ function MessageHistory({ messages, isLoading }: { messages: Message[]; isLoadin
   }, [messages])
 
   return (
-    <div className="absolute inset-0 rounded-lg border bg-muted/20 overflow-y-auto flex flex-col">
+    <div className={cn(
+      "rounded-lg border bg-muted/20 overflow-y-auto flex flex-col",
+      expanded ? "flex-1 min-h-0" : "min-h-[180px] max-h-[40vh]"
+    )}>
       {isLoading ? (
         <div className="space-y-3 p-5 animate-pulse">
           {[...Array(4)].map((_, i) => <div key={i} className="h-4 rounded bg-muted w-full" />)}

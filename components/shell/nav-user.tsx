@@ -1,6 +1,7 @@
 'use client'
 
-import { ChevronsUpDown, LogOut, User } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react"
+import { ArrowUpDownIcon, Logout01Icon, UserIcon } from "@hugeicons/core-free-icons"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -30,7 +31,7 @@ export function NavUser({ user }: { user: UserData }) {
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="truncate text-xs text-muted-foreground">{user.email}</span>
               </div>
-              <ChevronsUpDown className="ml-auto size-4" />
+              <HugeiconsIcon icon={ArrowUpDownIcon} className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56 rounded-lg" side="bottom" align="end" sideOffset={4}>
@@ -47,9 +48,9 @@ export function NavUser({ user }: { user: UserData }) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem><User className="mr-2 size-4" /> Conta</DropdownMenuItem>
+            <DropdownMenuItem><HugeiconsIcon icon={UserIcon} className="mr-2 size-4" /> Conta</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem><LogOut className="mr-2 size-4" /> Sair</DropdownMenuItem>
+            <DropdownMenuItem><HugeiconsIcon icon={Logout01Icon} className="mr-2 size-4" /> Sair</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

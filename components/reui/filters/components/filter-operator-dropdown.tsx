@@ -1,7 +1,8 @@
 'use client'
 
 import * as React from "react"
-import { CheckIcon } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Tick01Icon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -59,7 +60,7 @@ export function FilterOperatorDropdown<T = unknown>({
             className="flex items-center justify-between"
           >
             <span>{op.label}</span>
-            <CheckIcon className={cn("text-primary ms-auto", op.value === operator ? "opacity-100" : "opacity-0")} />
+            <HugeiconsIcon icon={Tick01Icon} className={cn("text-primary ms-auto", op.value === operator ? "opacity-100" : "opacity-0")} />
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

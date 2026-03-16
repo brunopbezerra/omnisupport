@@ -1,6 +1,7 @@
 'use client'
 
-import { Headset, Loader2 } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { CustomerService01Icon, Loading03Icon } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -30,7 +31,7 @@ export function LoginForm({
           <div className="flex flex-col items-center gap-2 text-center">
             <div className="flex flex-col items-center gap-2 font-medium">
               <div className="flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <Headset className="size-6" />
+                <HugeiconsIcon icon={CustomerService01Icon} className="size-6" />
               </div>
             </div>
             <h1 className="text-xl font-bold mt-2">Bem-vindo à OmniSupport</h1>
@@ -73,7 +74,7 @@ export function LoginForm({
 
           <Field className="mt-2">
             <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading && <HugeiconsIcon icon={Loading03Icon} className="mr-2 h-4 w-4 animate-spin" />}
               {isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
           </Field>

@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import { useRef, useEffect, useState } from "react"
-import { AlertCircleIcon } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { InformationCircleIcon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 import {
   InputGroup,
@@ -108,7 +109,7 @@ export function FilterInput<T = unknown>({
             <Tooltip>
               <TooltipTrigger asChild>
                 <InputGroupButton size="icon-xs">
-                  <AlertCircleIcon className="text-destructive size-3.5" />
+                  <HugeiconsIcon icon={InformationCircleIcon} className="text-destructive size-3.5" />
                 </InputGroupButton>
               </TooltipTrigger>
               <TooltipContent>

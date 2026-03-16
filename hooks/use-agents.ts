@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { useWorkspace } from '@/components/providers/workspace-provider'
 
 export interface Agent {
   id: string
@@ -10,29 +11,34 @@ export interface Agent {
 }
 
 export function useAgents() {
+  const { activeOrgId } = useWorkspace()
   const [agents, setAgents] = useState<Agent[]>([])
-  const [currentUser, setCurrentUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!activeOrgId) {
+      setAgents([])
+      setLoading(false)
+      return
+    }
+
     async function fetch() {
       try {
-        const [{ data: { user } }, { data: agentsData }] = await Promise.all([
-          supabase.auth.getUser(),
-          supabase
-            .from('profiles')
-            .select('id, full_name, avatar_url')
-            .in('role', ['agent', 'admin'])
-            .order('full_name', { ascending: true })
-        ])
-        setCurrentUser(user)
+        const { data: agentsData } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .eq('org_id', activeOrgId)
+          .in('role', ['agent', 'admin', 'super-admin'])
+          .order('full_name', { ascending: true })
+
         if (agentsData) setAgents(agentsData)
       } finally {
         setLoading(false)
       }
     }
-    fetch()
-  }, [])
 
-  return { agents, currentUser, loading }
+    fetch()
+  }, [activeOrgId])
+
+  return { agents, loading }
 }

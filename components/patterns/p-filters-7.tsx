@@ -35,7 +35,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
-import { UserIcon, MailIcon, BuildingIcon, MapPinIcon, ListFilterIcon, FunnelXIcon, CircleAlertIcon } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { UserIcon, Mail01Icon, Building01Icon, Location01Icon, FilterIcon, FilterRemoveIcon, InformationCircleIcon } from "@hugeicons/core-free-icons"
 
 interface IData {
   id: string
@@ -326,7 +327,7 @@ export function Pattern() {
       key: "name",
       label: "Name",
       icon: (
-        <UserIcon className="size-3.5" />
+        <HugeiconsIcon icon={UserIcon} className="size-3.5" />
       ),
       type: "text",
       className: "w-40",
@@ -336,7 +337,7 @@ export function Pattern() {
       key: "email",
       label: "Email",
       icon: (
-        <MailIcon className="size-3.5" />
+        <HugeiconsIcon icon={Mail01Icon} className="size-3.5" />
       ),
       type: "text",
       className: "w-48",
@@ -346,7 +347,7 @@ export function Pattern() {
       key: "company",
       label: "Company",
       icon: (
-        <BuildingIcon className="size-3.5" />
+        <HugeiconsIcon icon={Building01Icon} className="size-3.5" />
       ),
       type: "select",
       searchable: true,
@@ -370,7 +371,7 @@ export function Pattern() {
       key: "role",
       label: "Role",
       icon: (
-        <UserIcon className="size-3.5" />
+        <HugeiconsIcon icon={UserIcon} className="size-3.5" />
       ),
       type: "select",
       searchable: true,
@@ -394,7 +395,7 @@ export function Pattern() {
       key: "status",
       label: "Status",
       icon: (
-        <UserIcon className="size-3.5" />
+        <HugeiconsIcon icon={UserIcon} className="size-3.5" />
       ),
       type: "select",
       searchable: false,
@@ -421,7 +422,7 @@ export function Pattern() {
       key: "availability",
       label: "Availability",
       icon: (
-        <UserIcon className="size-3.5" />
+        <HugeiconsIcon icon={UserIcon} className="size-3.5" />
       ),
       type: "select",
       searchable: false,
@@ -473,7 +474,7 @@ export function Pattern() {
       key: "location",
       label: "Location",
       icon: (
-        <MapPinIcon className="size-3.5" />
+        <HugeiconsIcon icon={Location01Icon} className="size-3.5" />
       ),
       type: "text",
       className: "w-40",
@@ -797,8 +798,7 @@ export function Pattern() {
             size="sm"
             trigger={
               <Button variant="outline" size="icon-sm">
-                <ListFilterIcon
-                />
+                <HugeiconsIcon icon={FilterIcon} className="size-4" />
               </Button>
             }
           />
@@ -813,8 +813,7 @@ export function Pattern() {
             }}
             disabled={isLoading}
           >
-            <FunnelXIcon
-            />
+            <HugeiconsIcon icon={FilterRemoveIcon} className="size-4" />
             Clear
           </Button>
         )}
@@ -844,8 +843,7 @@ export function Pattern() {
 
       {/* Async Info Alert */}
       <Alert variant="success" className="mt-5">
-        <CircleAlertIcon
-        />
+        <HugeiconsIcon icon={InformationCircleIcon} className="size-4" />
         <AlertTitle>
           Async Mode: Simulated API Delay of <strong>800-2000ms</strong>
         </AlertTitle>

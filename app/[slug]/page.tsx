@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useCallback, DragEvent } from 'react'
+import { useState, useRef, useCallback, useEffect, DragEvent } from 'react'
 import { useParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import {
   Card,
   CardContent,
@@ -14,7 +15,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { UploadCloud, Trash2, FileText, Send, AlertCircle, Loader2 } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import {
+  CloudUploadIcon,
+  Delete02Icon,
+  LegalDocumentIcon,
+  SentIcon,
+  InformationCircleIcon,
+  Loading03Icon,
+} from '@hugeicons/core-free-icons'
 import { toast } from 'sonner'
 import { createClient } from '@supabase/supabase-js'
 
@@ -55,6 +64,36 @@ function generateRefToken(prefix: string = 'REF'): string {
 export default function PublicTicketForm() {
   const params = useParams()
   const slug = params.slug as string
+  const router = useRouter()
+
+  useEffect(() => {
+    async function resolveSlug() {
+      const { data: org } = await anonymousSupabase
+        .from('organizations')
+        .select('id')
+        .eq('slug', slug)
+        .maybeSingle()
+
+      if (org) return
+
+      const { data: redir } = await anonymousSupabase
+        .from('organization_slug_redirects')
+        .select('organization_id')
+        .eq('old_slug', slug)
+        .maybeSingle()
+
+      if (!redir) return
+
+      const { data: newOrg } = await anonymousSupabase
+        .from('organizations')
+        .select('slug')
+        .eq('id', redir.organization_id)
+        .maybeSingle()
+
+      if (newOrg) router.replace(`/${newOrg.slug}`)
+    }
+    resolveSlug()
+  }, [slug, router])
 
   const [email, setEmail] = useState('')
   const [subject, setSubject] = useState('')
@@ -330,7 +369,8 @@ export default function PublicTicketForm() {
                     }
                   `}
                 >
-                  <UploadCloud
+                  <HugeiconsIcon
+                    icon={CloudUploadIcon}
                     className={`h-8 w-8 transition-colors duration-200 ${
                       isDragging ? 'text-primary' : 'text-muted-foreground'
                     }`}
@@ -350,7 +390,7 @@ export default function PublicTicketForm() {
                 {/* Mensagem de erro de validação */}
                 {fileError && (
                   <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                    <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <HugeiconsIcon icon={InformationCircleIcon} className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <span>{fileError}</span>
                   </div>
                 )}
@@ -366,7 +406,7 @@ export default function PublicTicketForm() {
                         >
                           {/* Bloco esquerdo: ícone + nome truncado */}
                           <div className="flex flex-1 min-w-0 items-center gap-2">
-                            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <HugeiconsIcon icon={LegalDocumentIcon} className="h-4 w-4 shrink-0 text-muted-foreground" />
                             <span className="truncate min-w-0 font-medium text-foreground">
                               {file.name}
                             </span>
@@ -387,7 +427,7 @@ export default function PublicTicketForm() {
                               aria-label={`Remover ${file.name}`}
                               className="rounded-sm p-1 transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4 text-destructive" />
                             </button>
                           </div>
                         </li>
@@ -402,12 +442,12 @@ export default function PublicTicketForm() {
               <Button type="submit" disabled={isSubmitting} className="w-full">
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <HugeiconsIcon icon={Loading03Icon} className="w-4 h-4 mr-2 animate-spin" />
                     Enviando...
                   </>
                 ) : (
                   <>
-                    <Send className="w-4 h-4 mr-2" />
+                    <HugeiconsIcon icon={SentIcon} className="w-4 h-4 mr-2" />
                     Enviar Solicitação
                   </>
                 )}

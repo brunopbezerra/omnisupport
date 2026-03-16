@@ -1,9 +1,19 @@
 'use client'
 
 import * as React from 'react'
-import { Mail, FileText, Hash, Tag, User, Layers, Calendar } from 'lucide-react'
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Tick02Icon, HourglassIcon, ArrowRightDoubleIcon, CustomerService01Icon } from "@hugeicons/core-free-icons"
+import {
+  Tick02Icon,
+  HourglassIcon,
+  CustomerService01Icon,
+  Mail01Icon,
+  LegalDocumentIcon,
+  HashtagIcon,
+  LabelIcon,
+  UserIcon,
+  Layers01Icon,
+  Calendar03Icon,
+} from "@hugeicons/core-free-icons"
 import type { FilterFieldConfig, FilterI18nConfig } from '@/components/reui/filters'
 import { DatePickerWithRange } from '@/components/date-picker-with-range'
 
@@ -75,7 +85,7 @@ export const filterFields: FilterFieldConfig[] = [
   {
     key: "ref_token",
     label: "Ticket ID",
-    icon: <Hash className="size-3.5" />,
+    icon: <HugeiconsIcon icon={HashtagIcon} className="size-3.5" />,
     type: "text",
     placeholder: "Ticket ID...",
     defaultOperator: "contains",
@@ -83,7 +93,7 @@ export const filterFields: FilterFieldConfig[] = [
   {
     key: "customer_email",
     label: "Cliente",
-    icon: <Mail className="size-3.5" />,
+    icon: <HugeiconsIcon icon={Mail01Icon} className="size-3.5" />,
     type: "text",
     placeholder: "cliente@exemplo.com",
     defaultOperator: "contains",
@@ -91,7 +101,7 @@ export const filterFields: FilterFieldConfig[] = [
   {
     key: "subject",
     label: "Assunto",
-    icon: <FileText className="size-3.5" />,
+    icon: <HugeiconsIcon icon={LegalDocumentIcon} className="size-3.5" />,
     type: "text",
     placeholder: "Assunto...",
     defaultOperator: "contains",
@@ -99,21 +109,21 @@ export const filterFields: FilterFieldConfig[] = [
   {
     key: "categories",
     label: "Categorias",
-    icon: <Layers className="size-3.5" />,
+    icon: <HugeiconsIcon icon={Layers01Icon} className="size-3.5" />,
     type: "select",
     options: [], // To be populated
   },
   {
     key: "assigned_to",
     label: "Responsável",
-    icon: <User className="size-3.5" />,
+    icon: <HugeiconsIcon icon={UserIcon} className="size-3.5" />,
     type: "select",
     options: [], // To be populated
   },
   {
     key: "status",
     label: "Status",
-    icon: <Tag className="size-3.5" />,
+    icon: <HugeiconsIcon icon={LabelIcon} className="size-3.5" />,
     type: "select",
     options: [
       { value: "open", label: "Aberto", icon: <HugeiconsIcon icon={HourglassIcon} className="size-3 text-warning" /> },
@@ -124,7 +134,7 @@ export const filterFields: FilterFieldConfig[] = [
   {
     key: "created_at",
     label: "Data de criação",
-    icon: <Calendar className="size-3.5" />,
+    icon: <HugeiconsIcon icon={Calendar03Icon} className="size-3.5" />,
     type: "custom",
     defaultOperator: "between",
     customRenderer: ({ values, onChange, operator }) => {

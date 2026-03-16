@@ -1,7 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { PlusIcon, XIcon, CheckIcon } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Add01Icon, Cancel01Icon, Tick01Icon } from '@hugeicons/core-free-icons'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -173,7 +174,7 @@ export function CategorySelector({
               }}
               className="rounded-full hover:bg-foreground/10 p-0.5 transition-colors"
             >
-              <XIcon className="size-3" />
+              <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
             </button>
           </Badge>
         )
@@ -218,7 +219,7 @@ export function CategorySelector({
                       }}
                       className="rounded-full hover:bg-foreground/10 p-0.5 transition-colors opacity-0 group-hover:opacity-100"
                     >
-                      <XIcon className="size-3" />
+                      <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
                     </button>
                   </Badge>
                 )
@@ -238,7 +239,7 @@ export function CategorySelector({
               e.stopPropagation();
             }}
           >
-            <PlusIcon className="size-3.5" />
+            <HugeiconsIcon icon={Add01Icon} className="size-3.5" />
           </Button>
         </PopoverTrigger>
         <PopoverContent 
@@ -288,7 +289,7 @@ export function CategorySelector({
                         />
                         {category.name}
                       </div>
-                      {isSelected && <CheckIcon className="size-3.5" />}
+                      {isSelected && <HugeiconsIcon icon={Tick01Icon} className="size-3.5" />}
                     </CommandItem>
                   )
                 })}

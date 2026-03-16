@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
+import { useWorkspace } from '@/components/providers/workspace-provider'
 import type { Ticket } from '@/app/dashboard/data-table'
 import type { Agent } from '@/hooks/use-agents'
 
@@ -46,6 +47,7 @@ export function useTicketDetails(
   onOpenChange: (open: boolean) => void,
 ) {
   const router = useRouter()
+  const { activeOrgId } = useWorkspace()
   const [messages, setMessages] = useState<Message[]>([])
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
@@ -170,6 +172,7 @@ export function useTicketDetails(
         .from('messages')
         .insert([{
           ticket_id: ticket.id,
+          org_id: activeOrgId,
           body: replyContent,
           sender_role: 'agent',
           sender_id: user.id,

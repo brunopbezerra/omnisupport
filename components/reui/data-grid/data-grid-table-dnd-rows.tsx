@@ -44,7 +44,8 @@ import { Cell, flexRender, HeaderGroup, Row } from "@tanstack/react-table"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { GripHorizontalIcon } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Drag01Icon } from "@hugeicons/core-free-icons"
 
 // Context to share sortable listeners from row to handle
 type SortableContextValue = ReturnType<typeof useSortable>
@@ -68,8 +69,7 @@ function DataGridTableDndRowHandle({ className }: { className?: string }) {
         )}
         disabled
       >
-        <GripHorizontalIcon
-        />
+        <HugeiconsIcon icon={Drag01Icon} className="size-4" />
       </Button>
     )
   }
@@ -85,8 +85,7 @@ function DataGridTableDndRowHandle({ className }: { className?: string }) {
       {...context.attributes}
       {...context.listeners}
     >
-      <GripHorizontalIcon
-      />
+      <HugeiconsIcon icon={Drag01Icon} className="size-4" />
     </Button>
   )
 }

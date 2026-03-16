@@ -3,7 +3,8 @@
 import * as React from "react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { Calendar as CalendarIcon } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Calendar03Icon } from "@hugeicons/core-free-icons"
 import { DateRange } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
@@ -48,7 +49,7 @@ export function DatePickerWithRange({
               !values[0] && "text-muted-foreground"
             )}
           >
-            <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+            <HugeiconsIcon icon={Calendar03Icon} className="mr-2 h-3.5 w-3.5" />
             {isRange ? (
               dateRange?.from ? (
                 dateRange.to ? (

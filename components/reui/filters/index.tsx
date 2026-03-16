@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import { useMemo, useId } from "react"
-import { PlusIcon } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Add01Icon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -111,7 +112,7 @@ export function Filters<T = unknown>({
             }}
           >
             <DropdownMenuTrigger asChild>
-              {trigger || <Button variant="outline"><PlusIcon className="mr-2 size-4" />{mergedI18n.addFilter}</Button>}
+              {trigger || <Button variant="outline"><HugeiconsIcon icon={Add01Icon} className="mr-2 size-4" />{mergedI18n.addFilter}</Button>}
             </DropdownMenuTrigger>
             <DropdownMenuContent className={cn("w-[220px]", menuPopupClassName)} align="start">
               {showSearchInput && (

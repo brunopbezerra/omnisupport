@@ -7,7 +7,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
-import { HouseIcon, ChevronRightIcon, LayoutGridIcon, SettingsIcon } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Home01Icon, ArrowRight01Icon, GridViewIcon, Settings01Icon } from "@hugeicons/core-free-icons"
 
 export function Pattern() {
   return (
@@ -16,38 +17,33 @@ export function Pattern() {
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
             <Button variant="ghost" size="sm">
-              <HouseIcon
-              />
+              <HugeiconsIcon icon={Home01Icon} className="size-4" />
               Home
             </Button>
           </BreadcrumbLink>
         </BreadcrumbItem>
 
         <BreadcrumbSeparator>
-          <ChevronRightIcon
-          />
+          <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
         </BreadcrumbSeparator>
 
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
             <Button variant="ghost" size="sm">
-              <LayoutGridIcon
-              />
+              <HugeiconsIcon icon={GridViewIcon} className="size-4" />
               Workspace
             </Button>
           </BreadcrumbLink>
         </BreadcrumbItem>
 
         <BreadcrumbSeparator>
-          <ChevronRightIcon
-          />
+          <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
         </BreadcrumbSeparator>
 
         <BreadcrumbItem>
           <BreadcrumbPage>
-            <Button variant="secondary" size="sm">
-              <SettingsIcon
-              />
+            <Button variant="default" size="sm">
+              <HugeiconsIcon icon={Settings01Icon} className="size-4" />
               Settings
             </Button>
           </BreadcrumbPage>

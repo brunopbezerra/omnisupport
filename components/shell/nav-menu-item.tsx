@@ -1,6 +1,7 @@
 'use client'
 
-import { ChevronRight } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react"
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from "@/components/ui/sidebar";
 import type { NavItem } from "./nav-data";
@@ -29,7 +30,7 @@ export function NavMenuItem({ item }: { item: NavItem }) {
           <SidebarMenuButton isActive={item.isActive}>
             <Icon className="size-4" />
             <span>{item.label}</span>
-            <ChevronRight className="ml-auto size-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+            <HugeiconsIcon icon={ArrowRight01Icon} className="ml-auto size-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent>

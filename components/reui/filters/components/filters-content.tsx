@@ -5,7 +5,8 @@ import { useMemo, useCallback } from "react"
 import { cn } from "@/lib/utils"
 import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group"
 import { Button } from "@/components/ui/button"
-import { XIcon } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Cancel01Icon } from "@hugeicons/core-free-icons"
 import { useFilterContext } from "../context"
 import { Filter, FilterFieldsConfig, FilterFieldConfig, FilterFieldGroup } from "../types"
 import { FilterOperatorDropdown } from "./filter-operator-dropdown"
@@ -58,7 +59,7 @@ export function FiltersContent<T = unknown>({
             <ButtonGroupText>{field.icon}{field.label}</ButtonGroupText>
             <FilterOperatorDropdown field={field} operator={filter.operator} values={filter.values} onChange={(op) => updateFilter(filter.id, { operator: op })} />
             <FilterValueSelector field={field} values={filter.values} onChange={(vals) => updateFilter(filter.id, { values: vals })} operator={filter.operator} />
-            <Button variant="outline" size="icon-sm" onClick={() => removeFilter(filter.id)}><XIcon className="size-3.5" /></Button>
+            <Button variant="outline" size="icon-sm" onClick={() => removeFilter(filter.id)}><HugeiconsIcon icon={Cancel01Icon} className="size-3.5" /></Button>
           </ButtonGroup>
         )
       })}
