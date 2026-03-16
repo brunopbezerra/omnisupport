@@ -50,8 +50,8 @@ export function useTicketDetails(
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [isLoadingDetails, setIsLoadingDetails] = useState(false)
   const [events, setEvents] = useState<TicketEvent[]>([])
-  const [assignedProfile, setAssignedProfile] = useState<{ id: string; full_name: string; avatar_url?: string | null } | null>(null)
-  const [ticketCategories, setTicketCategories] = useState<Category[]>([])
+  const [assignedProfile, setAssignedProfile] = useState<{ id: string; full_name: string; avatar_url?: string | null } | null>(ticket?.assigned_to_profile || null)
+  const [ticketCategories, setTicketCategories] = useState<Category[]>(ticket?.categories || [])
 
   const [replyContent, setReplyContent] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -77,60 +77,47 @@ export function useTicketDetails(
 
     setIsLoadingDetails(true)
     try {
-      // Fetch assigned profile and categories
-      const { data: ticketData } = await supabase
-        .from('tickets')
-        .select(`
-          assigned_to, 
-          assigned_to_profile:profiles!tickets_assigned_to_fkey(id, full_name, avatar_url),
-          categories:ticket_categories(category:categories(id, name, color))
-        `)
-        .eq('id', ticket.id)
-        .single()
+      const fetchMessagesPromise = async () => {
+        const { data: messagesData, error: messagesError } = await supabase
+          .from('messages')
+          .select('id, body, sender_role, created_at')
+          .eq('ticket_id', ticket.id)
+          .order('created_at', { ascending: true })
 
-      if (ticketData) {
-        setAssignedProfile((ticketData as any).assigned_to_profile ?? null)
-        setTicketCategories((ticketData as any).categories?.map((tc: any) => tc.category) || [])
-      }
+        if (messagesError && messagesError.code !== 'PGRST116') {
+          console.error('Erro ao buscar mensagens:', messagesError)
+        } else if (messagesData && messagesData.length > 0) {
+          setMessages(messagesData)
 
-      // Fetch messages
-      const { data: messagesData, error: messagesError } = await supabase
-        .from('messages')
-        .select('id, body, sender_role, created_at')
-        .eq('ticket_id', ticket.id)
-        .order('created_at', { ascending: true })
+          const messageIds = messagesData.map(m => m.id)
+          const { data: attachmentsData } = await supabase
+            .from('attachments')
+            .select('id, file_name, file_size, file_type, file_path, message_id')
+            .in('message_id', messageIds)
 
-      if (messagesError && messagesError.code !== 'PGRST116') {
-        console.error('Erro ao buscar mensagens:', messagesError)
-      } else if (messagesData && messagesData.length > 0) {
-        setMessages(messagesData)
-
-        const messageIds = messagesData.map(m => m.id)
-        const { data: attachmentsData } = await supabase
-          .from('attachments')
-          .select('id, file_name, file_size, file_type, file_path, message_id')
-          .in('message_id', messageIds)
-
-        if (attachmentsData && attachmentsData.length > 0) {
-          const parsed = attachmentsData.map(att => {
-            const { data: urlData } = supabase.storage
-              .from('attachments')
-              .getPublicUrl(att.file_path)
-            return {
-              id: att.id,
-              file_name: att.file_name,
-              file_size: att.file_size,
-              file_type: att.file_type,
-              url: urlData.publicUrl,
-              message_id: att.message_id,
-            }
-          })
-          setAttachments(parsed)
+          if (attachmentsData && attachmentsData.length > 0) {
+            const parsed = attachmentsData.map(att => {
+              const { data: urlData } = supabase.storage
+                .from('attachments')
+                .getPublicUrl(att.file_path)
+              return {
+                id: att.id,
+                file_name: att.file_name,
+                file_size: att.file_size,
+                file_type: att.file_type,
+                url: urlData.publicUrl,
+                message_id: att.message_id,
+              }
+            })
+            setAttachments(parsed)
+          }
         }
       }
 
-      // Fetch events
-      await refreshEvents(ticket.id)
+      await Promise.all([
+        fetchMessagesPromise(),
+        refreshEvents(ticket.id)
+      ])
     } finally {
       setIsLoadingDetails(false)
     }

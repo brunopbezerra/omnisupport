@@ -16,7 +16,20 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { UploadCloud, Trash2, FileText, Send, AlertCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { supabase } from '@/lib/supabase/client'
+import { createClient } from '@supabase/supabase-js'
+
+// Cria um cliente anônimo que não recupera a sessão do localStorage
+const anonymousSupabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
+    }
+  }
+)
 
 // --- Constantes de limite ---
 const MAX_FILES = 5
@@ -121,7 +134,7 @@ export default function PublicTicketForm() {
 
     try {
       // 1. Identifica a organização pelo slug
-      const { data: org, error: orgError } = await supabase
+      const { data: org, error: orgError } = await anonymousSupabase
         .from('organizations')
         .select('id, ticket_prefix')
         .eq('slug', slug)
@@ -135,7 +148,7 @@ export default function PublicTicketForm() {
       const refToken = generateRefToken(org.ticket_prefix ?? 'REF')
       const ticketId = crypto.randomUUID()
 
-      const { error: ticketError } = await supabase
+      const { error: ticketError } = await anonymousSupabase
         .from('tickets')
         .insert({
           id: ticketId,
@@ -153,7 +166,7 @@ export default function PublicTicketForm() {
       // 3. Cria a mensagem inicial — UUID gerado no cliente
       const messageId = crypto.randomUUID()
 
-      const { error: messageError } = await supabase
+      const { error: messageError } = await anonymousSupabase
         .from('messages')
         .insert({
           id: messageId,
@@ -172,7 +185,7 @@ export default function PublicTicketForm() {
           const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
           const filePath = `${org.id}/${ticketId}/${Date.now()}_${sanitizedName}`
 
-          const { error: uploadError } = await supabase.storage
+          const { error: uploadError } = await anonymousSupabase.storage
             .from('attachments')
             .upload(filePath, file, { upsert: false })
 
@@ -182,7 +195,7 @@ export default function PublicTicketForm() {
           }
 
           // Registra o anexo na tabela attachments
-          await supabase.from('attachments').insert({
+          await anonymousSupabase.from('attachments').insert({
             message_id: messageId,
             file_path: filePath,
             file_name: file.name,

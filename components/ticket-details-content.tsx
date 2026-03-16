@@ -204,10 +204,11 @@ export function TicketDetailsContent({ ticket, onClose, onUpdateTicket }: Ticket
                       status={ticket.status}
                       onUpdateStatus={(newStatus) => {
                         const agentId = newStatus === 'in_progress' ? currentUser?.id : undefined
+                        const agentProfile = newStatus === 'in_progress' ? agents.find(a => a.id === currentUser?.id) : undefined
                         handleUpdateStatus(newStatus, agentId)
                         onUpdateTicket?.(ticket.id, { 
                           status: newStatus,
-                          ...(agentId ? { assigned_to: agentId, assigned_to_profile: currentUser } : {})
+                          ...(agentId ? { assigned_to: agentId, assigned_to_profile: agentProfile } : {})
                         })
                       }}
                       isLoading={isUpdatingStatus}
@@ -252,7 +253,7 @@ export function TicketDetailsContent({ ticket, onClose, onUpdateTicket }: Ticket
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              {!isHistoryExpanded && <ActivityHistory events={events} isLoading={isLoadingDetails} />}
+              {!isHistoryExpanded && <ActivityHistory events={events} isLoading={isLoadingDetails} customerEmail={ticket.customer_email} />}
             </div>
 
             {/* ── Attachments ── */}
@@ -290,7 +291,7 @@ export function TicketDetailsContent({ ticket, onClose, onUpdateTicket }: Ticket
           </div>
           <div className="flex-1 overflow-y-auto min-h-0">
             <div className="p-4">
-              <ActivityHistory events={events} isLoading={isLoadingDetails} expanded={true} />
+              <ActivityHistory events={events} isLoading={isLoadingDetails} expanded={true} customerEmail={ticket.customer_email} />
             </div>
           </div>
         </div>
@@ -415,7 +416,7 @@ function MessageHistory({ messages, isLoading }: { messages: Message[]; isLoadin
     </div>
   )
 }
-function ActivityHistory({ events, isLoading, expanded }: { events: TicketEvent[]; isLoading: boolean; expanded?: boolean }) {
+function ActivityHistory({ events, isLoading, expanded, customerEmail }: { events: TicketEvent[]; isLoading: boolean; expanded?: boolean; customerEmail: string }) {
   if (isLoading) {
     return (
       <div className="space-y-2 animate-pulse">
@@ -461,10 +462,20 @@ function ActivityHistory({ events, isLoading, expanded }: { events: TicketEvent[
   }
 
   const formatMsg = (e: TicketEvent) => {
-    // metadata is the primary source of truth, but we fallback to actor?.full_name or 'Sistema'
-    const name = e.metadata?.actor_name || e.actor?.full_name || 'Sistema'
-    const nameElement = <strong>{name}</strong>
+    // metadata is the primary source of truth, but we fallback to actor?.full_name or customerEmail
+    const rawName = e.metadata?.actor_name || e.actor?.full_name
     
+    // Se for o cliente (rawName não existe), forçamos lowercase do email
+    // Se for o agente (rawName existe), fazemos Title Case (ex: "Bruno Pires")
+    let formattedName = ''
+    if (!rawName) {
+      formattedName = customerEmail.toLowerCase()
+    } else {
+      formattedName = rawName.split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
+    }
+
+    const nameElement = <span className="text-muted-foreground text-[11px] font-semibold">{formattedName}</span>
+
     switch (e.event_type) {
       case 'ticket_created':
         return <>{nameElement} abriu o chamado.</>
