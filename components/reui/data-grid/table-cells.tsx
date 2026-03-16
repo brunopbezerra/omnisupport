@@ -1,7 +1,7 @@
 'use client'
 
 import { ReactNode, CSSProperties } from "react"
-import { Header, Column, Cell } from "@tanstack/react-table"
+import { Header, Column, Cell, Row } from "@tanstack/react-table"
 import { useDataGrid } from "./data-grid"
 import { cn } from "@/lib/utils"
 import { Checkbox } from "@/components/ui/checkbox"

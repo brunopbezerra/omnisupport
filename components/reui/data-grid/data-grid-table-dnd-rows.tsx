@@ -15,12 +15,10 @@ import {
   DataGridTableBodyRow,
   DataGridTableBodyRowCell,
   DataGridTableBodyRowSkeleton,
-  DataGridTableBodyRowSkeletonCell,
   DataGridTableEmpty,
   DataGridTableHead,
   DataGridTableHeadRow,
   DataGridTableHeadRowCell,
-  DataGridTableHeadRowCellResize,
   DataGridTableRowSpacer,
 } from "@/components/reui/data-grid/data-grid-table"
 import {
@@ -206,7 +204,11 @@ function DataGridTableDndRows<TData>({
                               )}
                           {props.tableLayout?.columnsResizable &&
                             column.getCanResize() && (
-                              <DataGridTableHeadRowCellResize header={header} />
+                              <div
+                                onMouseDown={header.getResizeHandler()}
+                                onTouchStart={header.getResizeHandler()}
+                                className="absolute top-0 h-full w-4 cursor-col-resize -end-2 z-10 flex justify-center before:absolute before:w-px before:inset-y-0 before:bg-border"
+                              />
                             )}
                         </DataGridTableHeadRowCell>
                       )
@@ -228,12 +230,12 @@ function DataGridTableDndRows<TData>({
                 <DataGridTableBodyRowSkeleton key={rowIndex}>
                   {table.getVisibleFlatColumns().map((column, colIndex) => {
                     return (
-                      <DataGridTableBodyRowSkeletonCell
-                        column={column}
+                      <DataGridTableBodyRowCell
                         key={colIndex}
+                        cell={{ column, row: {} } as any}
                       >
                         {column.columnDef.meta?.skeleton}
-                      </DataGridTableBodyRowSkeletonCell>
+                      </DataGridTableBodyRowCell>
                     )
                   })}
                 </DataGridTableBodyRowSkeleton>

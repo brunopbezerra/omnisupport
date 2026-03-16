@@ -142,3 +142,10 @@ export interface Filter<T = unknown> {
   operator: string
   values: T[]
 }
+
+export interface FilterGroup<T = unknown> {
+  id: string
+  label: string
+  fields: FilterFieldConfig<T>[]
+  filters: Filter<T>[]
+}
