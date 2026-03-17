@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(cd:*)",
+      "WebFetch(domain:tweakcn.com)",
+      "Bash(npm run:*)"
+    ]
+  }
+}

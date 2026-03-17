@@ -8,8 +8,10 @@ import {
   ArrowRight01Icon,
   Building03Icon,
   CustomerService01Icon,
+  File01Icon,
   InboxIcon,
   Logout01Icon,
+  MessageMultiple01Icon,
   Settings01Icon,
   UserIcon,
   UserSettings01Icon,
@@ -53,6 +55,21 @@ const APP = { name: 'Produtools', description: 'Helpdesk SaaS' } as const
 const NAV_MAIN = [
   { label: 'Atendimentos', href: '/dashboard', icon: InboxIcon },
 ] as const
+
+const NAV_AUTOMATIONS = [
+  {
+    label: 'Formulários',
+    href: '/dashboard/automations/forms',
+    icon: File01Icon,
+    adminOnly: true,
+  },
+  {
+    label: 'Respostas Automáticas',
+    href: null,
+    icon: MessageMultiple01Icon,
+    adminOnly: true,
+  },
+] satisfies { label: string; href: string | null; icon: unknown; adminOnly: boolean }[]
 
 const NAV_SETTINGS = [
   {
@@ -151,6 +168,7 @@ function AppSidebar({ pathname }: { pathname: string }) {
   const isAdmin = currentUser?.role === 'admin' || isSuperAdmin
 
   const visibleSettings = NAV_SETTINGS.filter(item => !item.adminOnly || isAdmin)
+  const visibleAutomations = NAV_AUTOMATIONS.filter(item => !item.adminOnly || isAdmin)
 
   return (
     <Sidebar>
@@ -195,7 +213,10 @@ function AppSidebar({ pathname }: { pathname: string }) {
                   item={item}
                   isActive={
                     item.href === '/dashboard'
-                      ? pathname === '/dashboard' || (pathname.startsWith('/dashboard/') && !pathname.startsWith('/dashboard/settings'))
+                      ? pathname === '/dashboard' ||
+                        (pathname.startsWith('/dashboard/') &&
+                          !pathname.startsWith('/dashboard/settings') &&
+                          !pathname.startsWith('/dashboard/automations'))
                       : pathname === item.href || pathname.startsWith(item.href + '/')
                   }
                 />
@@ -203,6 +224,38 @@ function AppSidebar({ pathname }: { pathname: string }) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* ── Automações ─────────────────────────────────── */}
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <HugeiconsIcon icon={File01Icon} className="size-3.5 mr-1.5" />
+              Automações
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {visibleAutomations.map(item =>
+                  item.href ? (
+                    <NavItem
+                      key={item.href}
+                      item={item as { label: string; href: string; icon: any }}
+                      isActive={
+                        pathname === item.href || pathname.startsWith(item.href + '/')
+                      }
+                    />
+                  ) : (
+                    <SidebarMenuItem key={item.label}>
+                      <SidebarMenuButton disabled className="opacity-50 cursor-not-allowed">
+                        <HugeiconsIcon icon={item.icon as any} className="size-4" />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* ── Configurações ──────────────────────────────── */}
         <SidebarGroup>
@@ -235,10 +288,87 @@ function AppSidebar({ pathname }: { pathname: string }) {
 }
 
 // ─── Breadcrumb resolution ────────────────────────────────────
-const ALL_NAV = [
-  ...NAV_SETTINGS,
-  ...NAV_MAIN,
+
+interface RouteNode {
+  segment: string      // exact segment name, or '*' for any dynamic segment
+  label: string
+  icon?: any
+  href?: string        // explicit link for this crumb (static routes)
+  linkable?: boolean   // auto-link using pathSoFar (dynamic segments like [id])
+  children?: RouteNode[]
+}
+
+/**
+ * Declarative route tree.
+ * Root is always /dashboard — only sub-paths are listed here.
+ * To add a new section, append a node. Dynamic segments use `segment: '*'`.
+ */
+const ROUTE_TREE: RouteNode[] = [
+  {
+    segment: 'automations',
+    label: 'Automações',
+    icon: File01Icon,
+    children: [
+      {
+        segment: 'forms',
+        label: 'Formulários',
+        href: '/dashboard/automations/forms',
+        icon: File01Icon,
+        children: [
+          {
+            segment: '*',
+            label: 'Editor',
+            linkable: true,
+            children: [
+              { segment: 'preview', label: 'Preview' },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    segment: 'settings',
+    label: 'Configurações',
+    icon: Settings01Icon,
+    children: [
+      { segment: 'workspace', label: 'Workspace', icon: Building03Icon },
+      { segment: 'team', label: 'Equipe', icon: UserSettings01Icon },
+      { segment: 'profile', label: 'Perfil', icon: UserIcon },
+    ],
+  },
 ]
+
+interface BreadcrumbCrumb {
+  label: string
+  icon?: any
+  href?: string
+}
+
+function resolveCrumbs(pathname: string): BreadcrumbCrumb[] {
+  const relative = pathname.replace(/^\/dashboard\/?/, '')
+  if (!relative) return []
+
+  const segments = relative.split('/').filter(Boolean)
+  const crumbs: BreadcrumbCrumb[] = []
+  let currentNodes = ROUTE_TREE
+  let pathSoFar = '/dashboard'
+
+  for (const segment of segments) {
+    const match = currentNodes.find(n => n.segment === segment || n.segment === '*')
+    if (!match) break
+
+    pathSoFar += `/${segment}`
+    crumbs.push({
+      label: match.label,
+      icon: match.icon,
+      href: match.href ?? (match.linkable ? pathSoFar : undefined),
+    })
+    currentNodes = match.children ?? []
+  }
+
+  return crumbs
+}
 
 // ─── Inner layout (needs WorkspaceContext) ────────────────────
 function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
@@ -256,10 +386,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
     return null
   }
 
-  const activeNavItem =
-    ALL_NAV.find(
-      item => pathname === item.href || pathname.startsWith(item.href + '/')
-    ) ?? { label: 'Dashboard', href: '/dashboard', icon: CustomerService01Icon }
+  const crumbs = resolveCrumbs(pathname)
 
   return (
     <SidebarProvider className="h-svh overflow-hidden">
@@ -275,6 +402,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
           </Link>
           <Breadcrumb className="hidden md:block">
             <BreadcrumbList className="gap-0.5 sm:gap-1">
+              {/* Root — always a link */}
               <BreadcrumbItem>
                 <BreadcrumbLink asChild>
                   <Button variant="ghost" size="sm" className="h-8 gap-2 px-2" asChild>
@@ -285,26 +413,50 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
                   </Button>
                 </BreadcrumbLink>
               </BreadcrumbItem>
-              {activeNavItem.label !== 'Dashboard' && (
-                <>
-                  <BreadcrumbSeparator>
-                    <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
-                  </BreadcrumbSeparator>
-                  <BreadcrumbItem>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="h-8 gap-2 px-2 pointer-events-none"
-                      aria-current="page"
-                    >
-                      {activeNavItem.icon && (
-                        <HugeiconsIcon icon={activeNavItem.icon} className="size-3.5" />
+
+              {crumbs.map((crumb, idx) => {
+                const isLast = idx === crumbs.length - 1
+                return (
+                  <React.Fragment key={idx}>
+                    <BreadcrumbSeparator>
+                      <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" />
+                    </BreadcrumbSeparator>
+                    <BreadcrumbItem>
+                      {isLast ? (
+                        // Active (current page) — non-interactive
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-8 gap-2 px-2 pointer-events-none"
+                          aria-current="page"
+                        >
+                          {crumb.icon && (
+                            <HugeiconsIcon icon={crumb.icon} className="size-3.5" />
+                          )}
+                          {crumb.label}
+                        </Button>
+                      ) : crumb.href ? (
+                        // Intermediate with a page — clickable link
+                        <BreadcrumbLink asChild>
+                          <Button variant="ghost" size="sm" className="h-8 gap-2 px-2" asChild>
+                            <Link href={crumb.href}>
+                              {crumb.icon && (
+                                <HugeiconsIcon icon={crumb.icon} className="size-3.5" />
+                              )}
+                              {crumb.label}
+                            </Link>
+                          </Button>
+                        </BreadcrumbLink>
+                      ) : (
+                        // Intermediate with no page — plain separator text
+                        <span className="text-sm text-muted-foreground px-1">
+                          {crumb.label}
+                        </span>
                       )}
-                      {activeNavItem.label}
-                    </Button>
-                  </BreadcrumbItem>
-                </>
-              )}
+                    </BreadcrumbItem>
+                  </React.Fragment>
+                )
+              })}
             </BreadcrumbList>
           </Breadcrumb>
           <div className="ml-auto flex items-center gap-2">
