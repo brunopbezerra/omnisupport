@@ -64,9 +64,39 @@ export function useFormBuilder(formId: string) {
       order_index: 0,
       options: CHOICE_TYPES.includes(type) ? [{ id: crypto.randomUUID(), label: '' }] : [],
       mapping: {},
+      hidden: false,
+      default_value: null,
+      mask: null,
     }
     setFields(prev => {
       const updated = [...prev, { ...newField, order_index: prev.length }]
+      return updated
+    })
+    setSelectedFieldId(newField.id)
+    setIsDirty(true)
+  }, [formId])
+
+  const addFieldAt = useCallback((type: FieldType, index?: number) => {
+    const newField: FormField = {
+      id: crypto.randomUUID(),
+      form_id: formId,
+      label: '',
+      type,
+      required: false,
+      order_index: 0,
+      options: CHOICE_TYPES.includes(type) ? [{ id: crypto.randomUUID(), label: '' }] : [],
+      mapping: {},
+      hidden: false,
+      default_value: null,
+      mask: null,
+    }
+    setFields(prev => {
+      const insertAt = index !== undefined ? Math.max(0, Math.min(index, prev.length)) : prev.length
+      const updated = [
+        ...prev.slice(0, insertAt),
+        { ...newField, order_index: insertAt },
+        ...prev.slice(insertAt),
+      ].map((f, i) => ({ ...f, order_index: i }))
       return updated
     })
     setSelectedFieldId(newField.id)
@@ -161,6 +191,9 @@ export function useFormBuilder(formId: string) {
             order_index: f.order_index,
             options: f.options,
             mapping: f.mapping,
+            hidden: f.hidden ?? false,
+            default_value: f.default_value ?? null,
+            mask: f.mask ?? null,
           }))
         )
       }
@@ -199,6 +232,7 @@ export function useFormBuilder(formId: string) {
     isSaving,
     isLoading,
     addField,
+    addFieldAt,
     updateField,
     removeField,
     reorderFields,

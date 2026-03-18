@@ -7,6 +7,8 @@ export type LogicOperator =
   | 'greater_than'
   | 'less_than'
 
+export type FieldMask = 'none' | 'phone_br' | 'date' | 'url'
+
 export interface FormSettings {
   // Branding
   header_image_url?: string
@@ -42,6 +44,9 @@ export interface FormField {
   order_index: number
   options: FieldOption[]
   mapping: FieldMapping
+  hidden: boolean
+  default_value?: string | null
+  mask?: FieldMask | null
 }
 
 export interface FormLogic {

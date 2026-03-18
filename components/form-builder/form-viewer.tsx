@@ -17,7 +17,47 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useFormLogic, clearHiddenValues } from '@/hooks/use-form-logic'
 import { getContrastColor, getPrimaryHover } from '@/lib/utils'
-import type { FormField, FormLogic, FormSettings } from '@/types/forms'
+import type { FormField, FormLogic, FormSettings, FieldMask } from '@/types/forms'
+
+// ─── Mask utilities ────────────────────────────────────────────────────────────
+
+function applyMask(value: string, mask: FieldMask | null | undefined): string {
+  if (!mask || mask === 'none') return value
+  if (mask === 'phone_br') {
+    const digits = value.replace(/\D/g, '').slice(0, 11)
+    if (digits.length <= 2) return digits.replace(/(\d{0,2})/, '($1')
+    if (digits.length <= 6) return digits.replace(/(\d{2})(\d{0,4})/, '($1) $2')
+    if (digits.length <= 10) return digits.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3')
+    return digits.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3')
+  }
+  if (mask === 'date') {
+    const digits = value.replace(/\D/g, '').slice(0, 8)
+    if (digits.length <= 2) return digits
+    if (digits.length <= 4) return digits.replace(/(\d{2})(\d{0,2})/, '$1/$2')
+    return digits.replace(/(\d{2})(\d{2})(\d{0,4})/, '$1/$2/$3')
+  }
+  return value
+}
+
+function validateMask(value: string, mask: FieldMask | null | undefined): string | null {
+  if (!mask || mask === 'none' || !value.trim()) return null
+  if (mask === 'phone_br') {
+    const digits = value.replace(/\D/g, '')
+    if (digits.length < 10 || digits.length > 11) return 'Telefone inválido. Use: (11) 99999-9999'
+  }
+  if (mask === 'date') {
+    const parts = value.split('/')
+    if (parts.length !== 3 || parts[2].length !== 4) return 'Data inválida. Use: DD/MM/AAAA'
+    const [d, m, y] = parts.map(Number)
+    const date = new Date(y, m - 1, d)
+    if (isNaN(date.getTime()) || date.getDate() !== d || date.getMonth() !== m - 1)
+      return 'Data inválida'
+  }
+  if (mask === 'url') {
+    try { new URL(value) } catch { return 'URL inválida. Ex: https://exemplo.com' }
+  }
+  return null
+}
 
 // Anonymous client used only for real (non-preview) submissions
 const submissionClient = createClient(
@@ -153,7 +193,11 @@ export function FormViewer({
   ticketPrefix = 'REF',
   isPreview = false,
 }: FormViewerProps) {
-  const [values, setValues] = useState<Record<string, string>>({})
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    // Pre-populate hidden fields default_value
+    const defaults: Record<string, string> = {}
+    return defaults
+  })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [refToken, setRefToken] = useState<string | null>(null)
@@ -182,9 +226,15 @@ export function FormViewer({
   }, [form.settings.primary_color, orgPrimaryColor])
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
-  function setValue(fieldId: string, value: string) {
-    setValues(prev => ({ ...prev, [fieldId]: value }))
+  function setValue(fieldId: string, raw: string, mask?: FieldMask | null) {
+    const masked = applyMask(raw, mask)
+    setValues(prev => ({ ...prev, [fieldId]: masked }))
     setErrors(prev => ({ ...prev, [fieldId]: '' }))
+  }
+
+  function handleBlurValidate(fieldId: string, value: string, mask?: FieldMask | null) {
+    const err = validateMask(value, mask)
+    if (err) setErrors(prev => ({ ...prev, [fieldId]: err }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -194,9 +244,14 @@ export function FormViewer({
 
     for (const field of fields) {
       if (!visibilityMap[field.id]) continue
+      if (field.hidden) continue // hidden fields are never validated on submit
       if (field.required && !values[field.id]?.trim()) {
         newErrors[field.id] = 'Este campo é obrigatório'
+        continue
       }
+      // Mask validation on submit
+      const maskErr = validateMask(values[field.id] ?? '', field.mask)
+      if (maskErr) newErrors[field.id] = maskErr
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -218,7 +273,15 @@ export function FormViewer({
       const token = generateRefToken(ticketPrefix)
       const ticketId = crypto.randomUUID()
       const messageId = crypto.randomUUID()
-      const cleanValues = clearHiddenValues(values, visibilityMap, fields)
+
+      // Build final values: user-entered for visible, default_value for hidden
+      const valuesWithHidden = { ...values }
+      for (const f of fields) {
+        if (f.hidden && f.default_value) {
+          valuesWithHidden[f.id] = f.default_value
+        }
+      }
+      const cleanValues = clearHiddenValues(valuesWithHidden, visibilityMap, fields)
 
       const subjectField = fields.find(f => f.mapping?.target === 'subject')
       const emailField = fields.find(f => f.mapping?.target === 'customer_email')
@@ -304,6 +367,8 @@ export function FormViewer({
 
                 {fields.map(field => {
                   const visible = visibilityMap[field.id] ?? true
+                  // Hidden fields: never render, but their default_value is handled at submit time
+                  if (field.hidden) return null
                   const error = errors[field.id]
                   const fieldId = `field-${field.id}`
 
@@ -337,9 +402,17 @@ export function FormViewer({
                         {(field.type === 'text' || field.type === 'number') && (
                           <Input
                             id={fieldId}
-                            type={field.type}
+                            type={field.type === 'number' ? 'number' : 'text'}
+                            inputMode={field.mask === 'phone_br' || field.mask === 'date' ? 'numeric' : undefined}
                             value={values[field.id] ?? ''}
-                            onChange={e => setValue(field.id, e.target.value)}
+                            onChange={e => setValue(field.id, e.target.value, field.mask)}
+                            onBlur={() => handleBlurValidate(field.id, values[field.id] ?? '', field.mask)}
+                            placeholder={
+                              field.mask === 'phone_br' ? '(11) 99999-9999'
+                              : field.mask === 'date' ? 'DD/MM/AAAA'
+                              : field.mask === 'url' ? 'https://'
+                              : undefined
+                            }
                             disabled={isSubmitting}
                           />
                         )}

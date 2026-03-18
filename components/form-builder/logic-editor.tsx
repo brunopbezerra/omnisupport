@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/select'
 import type { FormField, FormLogic, LogicOperator } from '@/types/forms'
 
+const CHOICE_TYPES: FormField['type'][] = ['select', 'radio', 'checkbox']
+
 const BASE_OPERATORS: { value: LogicOperator; label: string }[] = [
   { value: 'equals', label: 'é igual a' },
   { value: 'not_equals', label: 'não é igual a' },
@@ -34,14 +36,11 @@ function wouldCreateCycle(
   targetId: string,
   existingRules: FormLogic[]
 ): boolean {
-  // Build adjacency: source -> targets it controls
   const graph = new Map<string, Set<string>>()
   for (const rule of existingRules) {
     if (!graph.has(rule.source_field_id)) graph.set(rule.source_field_id, new Set())
     graph.get(rule.source_field_id)!.add(rule.target_field_id)
   }
-
-  // DFS from targetId; if we can reach sourceId, adding source->target creates a cycle
   const visited = new Set<string>()
   const stack = [targetId]
   while (stack.length) {
@@ -87,9 +86,11 @@ export function LogicEditor({ field, allFields, logic, onAdd, onRemove, onUpdate
         const sourceField = allFields.find(f => f.id === rule.source_field_id)
         const availableOperators = getOperatorsForField(sourceField)
         const currentOpValid = availableOperators.some(o => o.value === rule.operator)
+        const isChoiceSource = sourceField && CHOICE_TYPES.includes(sourceField.type)
+        const sourceOptions_ = sourceField?.options ?? []
 
         return (
-          <div key={rule.id} className="space-y-1.5 rounded-md border border-border p-2">
+          <div key={rule.id} className="space-y-1.5 rounded-md border border-border/50 bg-background/60 p-2">
             <div className="flex items-center justify-between gap-1">
               <span className="text-xs text-muted-foreground font-medium">Mostrar se</span>
               <Button
@@ -104,6 +105,7 @@ export function LogicEditor({ field, allFields, logic, onAdd, onRemove, onUpdate
               </Button>
             </div>
 
+            {/* Source field selector */}
             <Select
               value={rule.source_field_id}
               onValueChange={v => {
@@ -113,11 +115,12 @@ export function LogicEditor({ field, allFields, logic, onAdd, onRemove, onUpdate
                 onUpdate(rule.id, {
                   source_field_id: v,
                   operator: opStillValid ? rule.operator : newOps[0].value,
+                  value: '',
                 })
               }}
             >
-              <SelectTrigger className="h-7 text-xs">
-                <SelectValue placeholder="Campo de origem" />
+              <SelectTrigger className="h-7 text-xs w-full overflow-hidden">
+                <SelectValue placeholder="Campo de origem" className="truncate" />
               </SelectTrigger>
               <SelectContent>
                 {sourceOptions.map(f => (
@@ -128,12 +131,13 @@ export function LogicEditor({ field, allFields, logic, onAdd, onRemove, onUpdate
               </SelectContent>
             </Select>
 
+            {/* Operator selector */}
             <Select
               value={currentOpValid ? rule.operator : availableOperators[0].value}
               onValueChange={v => onUpdate(rule.id, { operator: v as LogicOperator })}
             >
-              <SelectTrigger className="h-7 text-xs">
-                <SelectValue />
+              <SelectTrigger className="h-7 text-xs w-full overflow-hidden">
+                <SelectValue className="truncate" />
               </SelectTrigger>
               <SelectContent>
                 {availableOperators.map(op => (
@@ -144,12 +148,31 @@ export function LogicEditor({ field, allFields, logic, onAdd, onRemove, onUpdate
               </SelectContent>
             </Select>
 
-            <Input
-              value={rule.value}
-              onChange={e => onUpdate(rule.id, { value: e.target.value })}
-              placeholder="Valor"
-              className="h-7 text-xs"
-            />
+            {/* Value — smart select for choice fields, free input otherwise */}
+            {isChoiceSource && sourceOptions_.length > 0 ? (
+              <Select
+                value={rule.value}
+                onValueChange={v => onUpdate(rule.id, { value: v })}
+              >
+                <SelectTrigger className="h-7 text-xs w-full overflow-hidden">
+                  <SelectValue placeholder="Selecione um valor..." className="truncate" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sourceOptions_.map(opt => (
+                    <SelectItem key={opt.id} value={opt.label} className="text-xs">
+                      {opt.label || '(sem label)'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                value={rule.value}
+                onChange={e => onUpdate(rule.id, { value: e.target.value })}
+                placeholder="Valor"
+                className="h-7 text-xs"
+              />
+            )}
           </div>
         )
       })}
@@ -169,7 +192,7 @@ export function LogicEditor({ field, allFields, logic, onAdd, onRemove, onUpdate
               type="button"
               variant="outline"
               size="sm"
-              className="w-full h-8 text-xs"
+              className="w-full h-7 text-xs"
               onClick={handleAdd}
               disabled={hasCycle}
             >

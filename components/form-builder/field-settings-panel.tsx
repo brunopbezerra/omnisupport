@@ -11,12 +11,20 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
 import { OptionsEditor } from './options-editor'
 import { LogicEditor } from './logic-editor'
-import type { FormField, FormLogic, FieldMapping } from '@/types/forms'
+import type { FormField, FormLogic, FieldMapping, FieldMask } from '@/types/forms'
 import type { Category } from '@/app/dashboard/data-table'
 
 const CHOICE_TYPES: FormField['type'][] = ['select', 'radio', 'checkbox']
+
+const MASK_OPTIONS: { value: FieldMask; label: string }[] = [
+  { value: 'none', label: 'Nenhuma' },
+  { value: 'phone_br', label: 'Telefone (BR)' },
+  { value: 'date', label: 'Data (DD/MM/AAAA)' },
+  { value: 'url', label: 'URL' },
+]
 
 interface Props {
   field: FormField | null
@@ -41,7 +49,7 @@ export function FieldSettingsPanel({
 }: Props) {
   if (!field) {
     return (
-      <div className="flex h-full items-center justify-center text-center">
+      <div className="flex h-full items-center justify-center text-center px-4">
         <p className="text-sm text-muted-foreground">
           Selecione um campo para editar suas propriedades.
         </p>
@@ -55,9 +63,12 @@ export function FieldSettingsPanel({
 
   return (
     <div className="space-y-5">
-      <div>
-        <h3 className="text-sm font-semibold mb-3">Propriedades do Campo</h3>
 
+      {/* ── Propriedades básicas ───────────────────────── */}
+      <div>
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Propriedades
+        </h3>
         <div className="space-y-3">
           {/* Label */}
           <div className="space-y-1.5">
@@ -72,21 +83,74 @@ export function FieldSettingsPanel({
 
           {/* Required */}
           <div className="flex items-center justify-between">
-            <Label className="text-xs">Obrigatório</Label>
+            <div>
+              <Label className="text-xs">Obrigatório</Label>
+            </div>
             <Switch
               checked={field.required}
               onCheckedChange={v => onUpdate({ required: v })}
             />
           </div>
+
+          {/* Hidden */}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-xs">Oculto</Label>
+              <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                Não exibido ao usuário final
+              </p>
+            </div>
+            <Switch
+              checked={field.hidden ?? false}
+              onCheckedChange={v => onUpdate({ hidden: v })}
+            />
+          </div>
+
+          {/* Default value (shown when hidden is on) */}
+          {field.hidden && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">Valor padrão</Label>
+              <Input
+                value={field.default_value ?? ''}
+                onChange={e => onUpdate({ default_value: e.target.value || null })}
+                placeholder="Valor enviado na submissão"
+                className="h-8 text-sm"
+              />
+            </div>
+          )}
+
+          {/* Mask — only for text fields */}
+          {field.type === 'text' && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">Máscara / Formato</Label>
+              <Select
+                value={field.mask ?? 'none'}
+                onValueChange={v => onUpdate({ mask: v === 'none' ? null : (v as FieldMask) })}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MASK_OPTIONS.map(m => (
+                    <SelectItem key={m.value} value={m.value} className="text-xs">
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Options */}
+      {/* ── Options (select / radio / checkbox) ───────── */}
       {CHOICE_TYPES.includes(field.type) && (
         <>
           <Separator />
           <div>
-            <h3 className="text-sm font-semibold mb-3">Opções</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Opções
+            </h3>
             <OptionsEditor
               options={field.options}
               onChange={opts => onUpdate({ options: opts })}
@@ -95,10 +159,12 @@ export function FieldSettingsPanel({
         </>
       )}
 
-      {/* Mapping */}
+      {/* ── Mapping ───────────────────────────────────── */}
       <Separator />
       <div>
-        <h3 className="text-sm font-semibold mb-3">Mapeamento</h3>
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Mapeamento
+        </h3>
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Campo do ticket</Label>
@@ -143,18 +209,27 @@ export function FieldSettingsPanel({
         </div>
       </div>
 
-      {/* Logic */}
+      {/* ── Conditional logic (pastel highlight) ──────── */}
       <Separator />
       <div>
-        <h3 className="text-sm font-semibold mb-3">Lógica Condicional</h3>
-        <LogicEditor
-          field={field}
-          allFields={allFields}
-          logic={logic}
-          onAdd={onAddLogic}
-          onRemove={onRemoveLogic}
-          onUpdate={onUpdateLogic}
-        />
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Lógica Condicional
+        </h3>
+        <div className={cn(
+          "rounded-lg transition-all",
+          logic.some(r => r.target_field_id === field.id) 
+            ? "p-4 bg-primary/5 border border-primary/10 shadow-sm mb-4" 
+            : "p-0 border-none"
+        )}>
+          <LogicEditor
+            field={field}
+            allFields={allFields}
+            logic={logic}
+            onAdd={onAddLogic}
+            onRemove={onRemoveLogic}
+            onUpdate={onUpdateLogic}
+          />
+        </div>
       </div>
     </div>
   )

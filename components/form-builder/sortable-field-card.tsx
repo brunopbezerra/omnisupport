@@ -4,7 +4,17 @@ import { CSSProperties } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Delete02Icon, Drag01Icon } from '@hugeicons/core-free-icons'
+import { 
+  Delete02Icon, 
+  Drag01Icon,
+  File01Icon,
+  ArrowUpDownIcon,
+  NoteEditIcon,
+  ArrowDown01Icon,
+  RadioButtonIcon,
+  CheckmarkSquare02Icon,
+} from '@hugeicons/core-free-icons'
+import type { IconSvgElement } from '@hugeicons/react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -12,13 +22,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { FormField } from '@/types/forms'
 
-const FIELD_LABELS: Record<FormField['type'], string> = {
-  text: 'Texto',
-  number: 'Número',
-  textarea: 'Área de Texto',
-  select: 'Seleção',
-  radio: 'Opção Única',
-  checkbox: 'Caixas',
+const FIELD_LABELS: Record<FormField['type'], { label: string; color: string; icon: IconSvgElement }> = {
+  text: { label: 'Texto', icon: File01Icon, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+  number: { label: 'Número', icon: ArrowUpDownIcon, color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
+  textarea: { label: 'Área de Texto', icon: NoteEditIcon, color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' },
+  select: { label: 'Seleção', icon: ArrowDown01Icon, color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  radio: { label: 'Opção Única', icon: RadioButtonIcon, color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' },
+  checkbox: { label: 'Caixas', icon: CheckmarkSquare02Icon, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
 }
 
 function FieldPreview({ field }: { field: FormField }) {
@@ -107,16 +117,23 @@ export function SortableFieldCard({ field, isSelected, onSelect, onRemove }: Pro
               )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              <Badge variant="secondary" className="text-xs py-0">{FIELD_LABELS[field.type]}</Badge>
+              <Badge 
+                variant="secondary" 
+                className={cn("text-[10px] font-bold uppercase tracking-tight py-0.5 px-2 border-none flex items-center gap-1", FIELD_LABELS[field.type].color)}
+              >
+                <HugeiconsIcon icon={FIELD_LABELS[field.type].icon} className="size-3" />
+                {FIELD_LABELS[field.type].label}
+              </Badge>
               <Button
                 type="button"
                 variant="ghost"
-                size="icon"
-                className="size-6 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                size="sm"
+                className="h-6 px-1.5 rounded-md text-[9px] font-bold uppercase tracking-tight text-destructive hover:bg-destructive/10 hover:text-destructive transition-all shrink-0"
                 onClick={e => { e.stopPropagation(); onRemove(field.id) }}
                 aria-label="Remover campo"
               >
-                <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+                <HugeiconsIcon icon={Delete02Icon} className="size-3 mr-1" />
+                Remover
               </Button>
             </div>
           </div>
