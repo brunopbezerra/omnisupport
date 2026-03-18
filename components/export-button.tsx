@@ -77,13 +77,13 @@ export function ExportButton({
           Exportar
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
           {tickets.length} chamado{tickets.length !== 1 ? 's' : ''} visíveis
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={() => run(() => exportToCSV(tickets, orgSlug))}
+          onClick={() => run(() => exportToCSV(tickets, metrics, orgSlug))}
           className="gap-2 text-sm"
         >
           <HugeiconsIcon icon={Table01Icon} className="size-3.5 text-muted-foreground" />
@@ -114,6 +114,7 @@ export function ExportButton({
             run(() =>
               exportToPDF({
                 tickets,
+                metrics,
                 orgName,
                 orgSlug,
                 orgLogoUrl,

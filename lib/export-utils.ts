@@ -39,7 +39,16 @@ function csvCell(val: string) {
     : escaped
 }
 
-export function exportToCSV(tickets: Ticket[], orgSlug: string) {
+export function exportToCSV(tickets: Ticket[], metrics: Metrics, orgSlug: string) {
+  const metricHeaders = ['Abertos', 'Em andamento', 'Resolvidos', 'Sem responsável', 'T.M. de Resposta (min)']
+  const metricValues = [
+    String(metrics.open),
+    String(metrics.in_progress),
+    String(metrics.resolved),
+    String(metrics.unassigned),
+    metrics.avgFirstResponseMinutes ? String(Math.round(metrics.avgFirstResponseMinutes)) : '—'
+  ]
+
   const headers = ['ID', 'Assunto', 'E-mail do cliente', 'Status', 'Categorias', 'Responsável', 'Criado em']
   const rows = tickets.map(t => [
     t.ref_token,
@@ -51,7 +60,16 @@ export function exportToCSV(tickets: Ticket[], orgSlug: string) {
     formatDate(t.created_at),
   ])
 
-  const csv = [headers, ...rows].map(row => row.map(csvCell).join(',')).join('\n')
+  const csv = [
+    ['Resumo de Métricas'],
+    metricHeaders,
+    metricValues,
+    [],
+    ['Lista de Chamados'],
+    headers,
+    ...rows
+  ].map(row => row.map(val => csvCell(val)).join(',')).join('\n')
+
   triggerDownload(csv, buildFilename(orgSlug, 'csv'), 'text/csv;charset=utf-8;')
 }
 
@@ -119,6 +137,10 @@ export function exportToMarkdown({
 
 ## 📊 Resumo Executivo
 - **Total de Chamados no Período:** ${total}
+- **Abertos:** ${metrics.open}
+- **Em andamento:** ${metrics.in_progress}
+- **Resolvidos:** ${metrics.resolved}
+- **Sem responsável:** ${metrics.unassigned}
 - **SLA Médio de Resposta:** ${avgSla}
 - **Categoria Predominante:** ${topCat ? `${topCat.name} (${topCatPct}%)` : '—'}
 - **Taxa de Resolução:** ${resolutionRate}%
@@ -147,6 +169,7 @@ ${tableRows || '| — | Nenhum chamado no período | — | — | — | — |'}
 
 interface PDFExportOptions {
   tickets: Ticket[]
+  metrics: Metrics
   orgName: string
   orgSlug: string
   orgLogoUrl: string | null
@@ -157,6 +180,7 @@ interface PDFExportOptions {
 
 export function exportToPDF({
   tickets,
+  metrics,
   orgName,
   orgSlug,
   orgLogoUrl,
@@ -188,41 +212,74 @@ export function exportToPDF({
   <meta charset="UTF-8" />
   <title>Relatório — ${orgName}</title>
   <style>
+    @page { size: landscape; margin: 0; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 12px; color: #111; padding: 32px; }
-    header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid ${primaryColor}; padding-bottom: 16px; margin-bottom: 24px; }
-    header .meta { text-align: right; font-size: 11px; color: #666; }
-    h1 { font-size: 18px; color: ${primaryColor}; margin-bottom: 4px; }
-    h2 { font-size: 13px; color: ${primaryColor}; margin: 20px 0 10px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-    th { background: ${primaryColor}; color: #fff; padding: 6px 10px; text-align: left; font-size: 11px; }
-    td { padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 11px; }
-    tr:nth-child(even) td { background: #f9f9f9; }
-    footer { margin-top: 32px; font-size: 10px; color: #aaa; text-align: center; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; color: #1e293b; background: #f8fafc; padding: 20mm; }
+    .page { max-width: 257mm; margin: 0 auto; background: #fff; padding: 12mm; border-radius: 16px; border: 1px solid #e2e8f0; min-height: 170mm; }
+    header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 24px; margin-bottom: 32px; }
+    header .meta { text-align: right; font-size: 11px; color: #64748b; line-height: 1.6; }
+    h1 { font-size: 24px; color: #0f172a; margin-bottom: 8px; font-weight: 800; letter-spacing: -0.025em; }
+    h2 { font-size: 16px; color: #0f172a; margin: 32px 0 16px; font-weight: 700; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 24px 0 32px 0; }
+    .metric-card { padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; text-align: left; }
+    .metric-label { font-size: 10px; color: #64748b; margin-bottom: 6px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; }
+    .metric-value { font-size: 22px; font-weight: 800; color: ${primaryColor}; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 8px; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+    th { background: #f8fafc; color: #64748b; padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 600; border-bottom: 1px solid #e2e8f0; text-transform: uppercase; letter-spacing: 0.05em; }
+    td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: #334155; }
+    tr:last-child td { border-bottom: 0; }
+    tr:hover td { background: #f8fafc; }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-size: 10px; font-weight: 600; background: #f1f5f9; color: #475569; }
+    footer { margin-top: 48px; font-size: 11px; color: #94a3b8; text-align: center; font-weight: 500; }
   </style>
 </head>
 <body>
-  <header>
-    ${logoHtml}
-    <div class="meta">
-      <div><strong>Período:</strong> ${formatDate(start.toISOString())} — ${formatDate(end.toISOString())}</div>
-      <div><strong>Gerado em:</strong> ${format(new Date(), "dd/MM/yyyy HH:mm")}</div>
+  <div class="page">
+    <header>
+      ${logoHtml}
+      <div class="meta">
+        <div><strong>Período:</strong> ${formatDate(start.toISOString())} — ${formatDate(end.toISOString())}</div>
+        <div><strong>Gerado em:</strong> ${format(new Date(), "dd/MM/yyyy HH:mm")}</div>
+      </div>
+    </header>
+
+    <h1>Relatório de Atendimento</h1>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Abertos</div>
+        <div class="metric-value">${metrics.open}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Em andamento</div>
+        <div class="metric-value">${metrics.in_progress}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Resolvidos</div>
+        <div class="metric-value">${metrics.resolved}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Sem responsável</div>
+        <div class="metric-value">${metrics.unassigned}</div>
+      </div>
+      <div class="metric-card" style="border-right: 0;">
+        <div class="metric-label">T.M. de Resposta</div>
+        <div class="metric-value">${metrics.avgFirstResponseMinutes ? formatMinutes(metrics.avgFirstResponseMinutes) : '—'}</div>
+      </div>
     </div>
-  </header>
 
-  <h1>Relatório de Atendimento</h1>
+    <h2>Lista de Chamados (${tickets.length})</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Assunto</th><th>Categoria</th><th>Status</th><th>Criado em</th><th>Responsável</th>
+        </tr>
+      </thead>
+      <tbody>${rows || '<tr><td colspan="6" style="text-align:center;color:#94a3b8">Nenhum chamado no período</td></tr>'}</tbody>
+    </table>
 
-  <h2>Lista de Chamados (${tickets.length})</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th><th>Assunto</th><th>Categoria</th><th>Status</th><th>Criado em</th><th>Responsável</th>
-      </tr>
-    </thead>
-    <tbody>${rows || '<tr><td colspan="6" style="text-align:center;color:#999">Nenhum chamado no período</td></tr>'}</tbody>
-  </table>
-
-  <footer>Gerado automaticamente pelo Produtools SaaS</footer>
+    <footer>Gerado automaticamente pelo Produtools SaaS</footer>
+  </div>
 </body>
 </html>`
 

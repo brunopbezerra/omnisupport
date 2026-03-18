@@ -63,7 +63,7 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
           {value}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-3 space-y-3" align="start">
+      <PopoverContent className="w-96 p-3 space-y-3" align="start">
         <ColorPickerContent value={value} onChange={onChange} />
       </PopoverContent>
     </Popover>

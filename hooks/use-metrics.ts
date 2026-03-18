@@ -7,7 +7,8 @@ import type { Ticket } from '@/app/dashboard/data-table'
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
-export type TimeFrame = '7d' | '30d' | '90d' | 'mtd'
+export type DateRange = { from: Date | undefined; to?: Date | undefined }
+export type TimeFrame = '7d' | '30d' | '90d' | 'mtd' | DateRange
 
 export interface Trend {
   pct: number               // absolute value of % change
@@ -35,19 +36,38 @@ interface Bounds { start: Date; end: Date; prevStart: Date; prevEnd: Date }
 
 function getPeriodBounds(tf: TimeFrame): Bounds {
   const now = new Date()
+  now.setHours(23, 59, 59, 999) // End of current day
 
+  if (typeof tf === 'object' && tf.from) {
+    const from = new Date(tf.from)
+    from.setHours(0, 0, 0, 0)
+    const to = tf.to ? new Date(tf.to) : new Date()
+    to.setHours(23, 59, 59, 999)
+
+    const diff = to.getTime() - from.getTime()
+    const prevEnd = new Date(from.getTime() - 1)
+    const prevStart = new Date(from.getTime() - diff - 1)
+    
+    return { start: from, end: to, prevStart, prevEnd }
+  }
+
+  // Predefined ranges
   if (tf === 'mtd') {
     const start    = new Date(now.getFullYear(), now.getMonth(), 1)
+    start.setHours(0, 0, 0, 0)
     const pm       = now.getMonth() === 0 ? 11 : now.getMonth() - 1
     const py       = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
     const prevStart = new Date(py, pm, 1)
-    return { start, end: now, prevStart, prevEnd: start }
+    prevStart.setHours(0, 0, 0, 0)
+    return { start, end: now, prevStart, prevEnd: new Date(start.getTime() - 1) }
   }
 
   const days      = tf === '7d' ? 7 : tf === '30d' ? 30 : 90
   const start     = new Date(now.getTime() - days * 86_400_000)
-  const prevStart = new Date(start.getTime() - days * 86_400_000)
-  return { start, end: now, prevStart, prevEnd: start }
+  start.setHours(0, 0, 0, 0)
+  const prevStart = new Date(start.getTime() - (days * 86_400_000))
+  prevStart.setHours(0, 0, 0, 0)
+  return { start, end: now, prevStart, prevEnd: new Date(start.getTime() - 1) }
 }
 
 function filterPeriod(tickets: Ticket[], start: Date, end: Date) {

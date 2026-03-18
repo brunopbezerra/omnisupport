@@ -1,4 +1,4 @@
-import { Inter, Source_Serif_4, Space_Mono } from "next/font/google"
+import { Geist, IBM_Plex_Mono, Lora } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -6,17 +6,17 @@ import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils";
 
-const fontSans = Inter({
+const fontSans = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
 })
 
-const fontSerif = Source_Serif_4({
+const fontSerif = Lora({
   subsets: ["latin"],
   variable: "--font-serif",
 })
 
-const fontMono = Space_Mono({
+const fontMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-mono",

@@ -171,7 +171,7 @@ function AppSidebar({ pathname }: { pathname: string }) {
   const visibleAutomations = NAV_AUTOMATIONS.filter(item => !item.adminOnly || isAdmin)
 
   return (
-    <Sidebar>
+    <Sidebar variant="inset">
       <SidebarHeader>
         {isSuperAdmin ? (
           <WorkspaceSwitcher />
@@ -391,7 +391,7 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider className="h-svh overflow-hidden">
       <AppSidebar pathname={pathname} />
-      <SidebarInset className="min-w-0">
+      <SidebarInset className="min-w-0 overflow-hidden">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Link href="/dashboard" className="flex items-center gap-2 md:hidden">

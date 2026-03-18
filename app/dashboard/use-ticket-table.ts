@@ -19,14 +19,21 @@ interface UseTicketTableProps<TData> {
   columns: ColumnDef<TData, any>[]
   onOpenTicket?: (ticket: Ticket) => void
   onUpdateTicket?: (ticketId: string, updates: Partial<Ticket>) => void
+  initialFilters?: Filter[]
 }
 
-export function useTicketTable<TData>({ data, columns, onOpenTicket, onUpdateTicket }: UseTicketTableProps<TData>) {
+export function useTicketTable<TData>({ 
+  data, 
+  columns, 
+  onOpenTicket, 
+  onUpdateTicket,
+  initialFilters = []
+}: UseTicketTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [selectedTicket, setSelectedTicket] = React.useState<Ticket | null>(null)
   const [isSheetOpen, setIsSheetOpen] = React.useState(false)
-  const [filters, setFilters] = React.useState<Filter[]>([])
+  const [filters, setFilters] = React.useState<Filter[]>(initialFilters)
 
   const handleFiltersChange = React.useCallback((newFilters: Filter[]) => {
     setFilters(newFilters)
@@ -43,6 +50,13 @@ export function useTicketTable<TData>({ data, columns, onOpenTicket, onUpdateTic
     
     setColumnFilters(tableFilters)
   }, [])
+
+  // Sync initial filters
+  React.useEffect(() => {
+    if (initialFilters.length > 0) {
+      handleFiltersChange(initialFilters)
+    }
+  }, [initialFilters, handleFiltersChange])
 
   const table = useReactTable({
     data,

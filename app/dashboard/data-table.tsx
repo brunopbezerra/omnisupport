@@ -12,7 +12,7 @@ declare module '@tanstack/react-table' {
   }
 }
 
-import { Filters, type FilterFieldConfig } from '@/components/reui/filters'
+import { Filters, type FilterFieldConfig, type Filter } from '@/components/reui/filters'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useTheme } from 'next-themes'
@@ -163,6 +163,10 @@ export function makeColumns(
         if (!filterValue || (Array.isArray(filterValue) && filterValue.length === 0)) return true
         const value = row.original.assigned_to
         const values = Array.isArray(filterValue) ? filterValue : [filterValue]
+        // Handle the special "__unassigned__" marker
+        if (values.includes('__unassigned__')) {
+          return !value
+        }
         return values.includes(value)
       },
       cell: ({ row, table }) => {
@@ -279,12 +283,15 @@ interface DataTableProps<TData, TValue> {
   onOpenTicket?: (ticket: Ticket) => void
   onUpdateTicket?: (ticketId: string, updates: Partial<Ticket>) => void
   onFilteredRowsChange?: (rows: Ticket[]) => void
+  onFiltersChange?: (filters: Filter[]) => void
+  onFiltersInitialized?: (applyStatusFilter: (status: string) => void) => void
   layout?: 'table' | 'list'
   selectedId?: string
   // Passed from page for inline assign
   agents?: Agent[]
   currentUserId?: string
   filterFields?: FilterFieldConfig[]
+  initialFilters?: Filter[]
 }
 
 export function DataTable<TData, TValue>({
@@ -292,15 +299,59 @@ export function DataTable<TData, TValue>({
   data,
   onOpenTicket,
   onFilteredRowsChange,
+  onFiltersChange,
+  onFiltersInitialized,
   layout = 'table',
   selectedId,
   agents = [],
   currentUserId,
   filterFields: passedFilterFields,
   onUpdateTicket,
+  initialFilters,
 }: DataTableProps<TData, TValue>) {
   const { table, filters, handleFiltersChange, selectedTicket, isSheetOpen, setIsSheetOpen, columnFilters } =
-    useTicketTable({ data, columns, onOpenTicket, onUpdateTicket })
+    useTicketTable({ data, columns, onOpenTicket, onUpdateTicket, initialFilters })
+
+  // Create a function to apply status filters from external components (KPI cards)
+  const applyStatusFilter = React.useCallback((status: string) => {
+    const isUnassigned = status === 'unassigned'
+    const targetField = isUnassigned ? 'assigned_to' : 'status'
+    const targetValue = isUnassigned ? '__unassigned__' : status
+
+    // Check if this exact filter is already applied
+    const existingFilterIndex = filters.findIndex(
+      f => f.field === targetField && f.operator === 'is' && f.values?.[0] === targetValue
+    )
+
+    if (existingFilterIndex >= 0) {
+      // Toggle off: remove this specific filter
+      const nextFilters = [...filters]
+      nextFilters.splice(existingFilterIndex, 1)
+      handleFiltersChange(nextFilters)
+    } else {
+      // Apply the filter: remove any existing filter on the same field to replace it
+      const nextFilters = filters.filter(f => f.field !== targetField)
+      
+      const newFilter: Filter = {
+        id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        field: targetField,
+        operator: 'is',
+        values: [targetValue],
+      }
+      
+      handleFiltersChange([...nextFilters, newFilter])
+    }
+  }, [filters, handleFiltersChange])
+
+  // Pass the callback to the parent on mount
+  React.useEffect(() => {
+    onFiltersInitialized?.(applyStatusFilter)
+  }, [applyStatusFilter, onFiltersInitialized])
+
+  // Notify parent whenever filters change
+  React.useEffect(() => {
+    onFiltersChange?.(filters)
+  }, [filters, onFiltersChange])
 
   // Notify parent whenever the filtered result set changes (for export)
   const filteredRows = table.getFilteredRowModel().rows
@@ -422,9 +473,6 @@ function ListView({ table, selectedId, agents, currentUserId }: {
             const ticket = row.original as Ticket
             const config = statusMap[ticket.status] || { label: ticket.status, icon: null, variant: 'default' }
             const isSelected = selectedId === ticket.id
-            const lastActivity = ticket.updated_at ?? ticket.created_at
-            const isStale = ticket.status !== 'resolved' &&
-              (Date.now() - new Date(lastActivity).getTime()) > 12 * 60 * 60 * 1000
             return (
               <button
                 key={row.id}
@@ -437,17 +485,10 @@ function ListView({ table, selectedId, agents, currentUserId }: {
                       <span className="font-semibold truncate text-foreground">{ticket.subject}</span>
                       <CategoryBadges categories={ticket.categories || []} />
                     </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {isStale && (
-                      <Badge variant="destructive-muted" className="text-[10px] px-2 py-0.5 font-semibold rounded-full">
-                        Inativo
-                      </Badge>
-                    )}
-                    <Badge variant={config.variant} className="text-[10px] px-2 py-0.5 font-semibold gap-1 rounded-full">
-                      {config.icon && <span className="scale-75 shrink-0">{config.icon}</span>}
-                      {config.label}
-                    </Badge>
-                  </div>
+                  <Badge variant={config.variant} className="text-[10px] px-2 py-0.5 font-semibold gap-1 rounded-full">
+                    {config.icon && <span className="scale-75 shrink-0">{config.icon}</span>}
+                    {config.label}
+                  </Badge>
                 </div>
                 <div className="flex w-full items-center justify-between gap-4 mt-1">
                   <span className="text-xs text-muted-foreground truncate flex-1">{ticket.customer_email}</span>

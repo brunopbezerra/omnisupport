@@ -141,6 +141,7 @@ export interface Filter<T = unknown> {
   field: string
   operator: string
   values: T[]
+  label?: string
 }
 
 export interface FilterGroup<T = unknown> {

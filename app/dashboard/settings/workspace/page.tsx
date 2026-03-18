@@ -317,7 +317,7 @@ export default function WorkspaceSettingsPage() {
                     </PopoverTrigger>
                   </div>
                 </div>
-                <PopoverContent className="w-64 p-3 space-y-3" align="end">
+                <PopoverContent className="w-96 p-3 space-y-3" align="end">
                   <ColorPickerContent
                     value={primaryColor ?? DEFAULT_CUSTOM_COLOR}
                     onChange={setPrimaryColor}
