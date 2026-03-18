@@ -36,6 +36,9 @@ function applyMask(value: string, mask: FieldMask | null | undefined): string {
     if (digits.length <= 4) return digits.replace(/(\d{2})(\d{0,2})/, '$1/$2')
     return digits.replace(/(\d{2})(\d{2})(\d{0,4})/, '$1/$2/$3')
   }
+  if (mask === 'email') {
+    return value.toLowerCase().trim()
+  }
   return value
 }
 
@@ -52,6 +55,10 @@ function validateMask(value: string, mask: FieldMask | null | undefined): string
     const date = new Date(y, m - 1, d)
     if (isNaN(date.getTime()) || date.getDate() !== d || date.getMonth() !== m - 1)
       return 'Data inválida'
+  }
+  if (mask === 'email') {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(value)) return 'E-mail inválido'
   }
   if (mask === 'url') {
     try { new URL(value) } catch { return 'URL inválida. Ex: https://exemplo.com' }

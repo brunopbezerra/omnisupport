@@ -21,7 +21,7 @@ import { AppearanceTab, SettingsTab } from '@/components/form-builder/appearance
 import Link from 'next/link'
 import {
   DndContext,
-  closestCenter,
+  closestCorners,
   MouseSensor,
   TouchSensor,
   KeyboardSensor,
@@ -32,7 +32,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core'
 
-import { CANVAS_DROPPABLE_ID } from '@/components/form-builder/form-canvas'
+import { CANVAS_DROPPABLE_ID, CANVAS_END_ZONE_ID } from '@/components/form-builder/form-canvas'
 import { useFormBuilder } from '@/hooks/use-form-builder'
 import { useCategories } from '@/hooks/use-categories'
 import { useWorkspace } from '@/components/providers/workspace-provider'
@@ -165,7 +165,7 @@ export default function FormEditorPage({ params }: PageProps) {
     const fieldType = active.data.current?.fieldType as FieldType | undefined
 
     if (isFromPalette && fieldType) {
-      if (over.id === CANVAS_DROPPABLE_ID) {
+      if (over.id === CANVAS_DROPPABLE_ID || over.id === CANVAS_END_ZONE_ID) {
         addField(fieldType)
       } else {
         // Dropped over an existing field — insert before it
@@ -193,7 +193,7 @@ export default function FormEditorPage({ params }: PageProps) {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >

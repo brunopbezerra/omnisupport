@@ -7,7 +7,7 @@ export type LogicOperator =
   | 'greater_than'
   | 'less_than'
 
-export type FieldMask = 'none' | 'phone_br' | 'date' | 'url'
+export type FieldMask = 'none' | 'phone_br' | 'date' | 'url' | 'email'
 
 export interface FormSettings {
   // Branding

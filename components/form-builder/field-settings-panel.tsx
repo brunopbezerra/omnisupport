@@ -21,8 +21,9 @@ const CHOICE_TYPES: FormField['type'][] = ['select', 'radio', 'checkbox']
 
 const MASK_OPTIONS: { value: FieldMask; label: string }[] = [
   { value: 'none', label: 'Nenhuma' },
-  { value: 'phone_br', label: 'Telefone (BR)' },
   { value: 'date', label: 'Data (DD/MM/AAAA)' },
+  { value: 'email', label: 'E-mail' },
+  { value: 'phone_br', label: 'Telefone (BR)' },
   { value: 'url', label: 'URL' },
 ]
 

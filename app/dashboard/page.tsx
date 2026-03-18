@@ -359,7 +359,7 @@ export default function DashboardPage() {
                   agents={agents}
                   currentUserId={currentUser?.id}
                   filterFields={dynamicFilterFields}
-                  layout={view === 'operacional' ? 'table' : 'list'}
+                  layout={selectedId ? 'list' : view === 'operacional' ? 'table' : 'list'}
                 />
             )}
           </div>

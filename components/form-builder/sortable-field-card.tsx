@@ -22,13 +22,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { FormField } from '@/types/forms'
 
-const FIELD_LABELS: Record<FormField['type'], { label: string; color: string; icon: IconSvgElement }> = {
-  text: { label: 'Texto', icon: File01Icon, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  number: { label: 'Número', icon: ArrowUpDownIcon, color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
-  textarea: { label: 'Área de Texto', icon: NoteEditIcon, color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' },
-  select: { label: 'Seleção', icon: ArrowDown01Icon, color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  radio: { label: 'Opção Única', icon: RadioButtonIcon, color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' },
-  checkbox: { label: 'Caixas', icon: CheckmarkSquare02Icon, color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+const FIELD_LABELS: Record<FormField['type'], { label: string; icon: IconSvgElement }> = {
+  text: { label: 'Texto', icon: File01Icon },
+  number: { label: 'Número', icon: ArrowUpDownIcon },
+  textarea: { label: 'Área de Texto', icon: NoteEditIcon },
+  select: { label: 'Seleção', icon: ArrowDown01Icon },
+  radio: { label: 'Opção Única', icon: RadioButtonIcon },
+  checkbox: { label: 'Caixas', icon: CheckmarkSquare02Icon },
 }
 
 function FieldPreview({ field }: { field: FormField }) {
@@ -117,9 +117,8 @@ export function SortableFieldCard({ field, isSelected, onSelect, onRemove }: Pro
               )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              <Badge 
-                variant="secondary" 
-                className={cn("text-[10px] font-bold uppercase tracking-tight py-0.5 px-2 border-none flex items-center gap-1", FIELD_LABELS[field.type].color)}
+              <Badge
+                className="text-[10px] font-semibold uppercase tracking-tight py-0.5 px-2 border-none flex items-center gap-1 bg-muted text-muted-foreground hover:bg-muted"
               >
                 <HugeiconsIcon icon={FIELD_LABELS[field.type].icon} className="size-3" />
                 {FIELD_LABELS[field.type].label}

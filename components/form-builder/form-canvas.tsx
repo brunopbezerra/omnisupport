@@ -9,6 +9,7 @@ import { SortableFieldCard } from './sortable-field-card'
 import type { FormField, FormLogic } from '@/types/forms'
 
 export const CANVAS_DROPPABLE_ID = 'form-canvas'
+export const CANVAS_END_ZONE_ID = 'form-canvas-end-zone'
 
 // ─── Compute field depth from logic rules ─────────────────────────────────────
 // A field is at depth N if it depends on a field at depth N-1.
@@ -69,13 +70,30 @@ function CanvasDropZone() {
   )
 }
 
+// ─── End of list drop zone ────────────────────────────────────────────────────
+
+function EndZoneDroppable() {
+  const { setNodeRef, isOver } = useDroppable({ id: CANVAS_END_ZONE_ID })
+  const dnd = useDndContext()
+  const isDraggingFromPalette = dnd.active?.data.current?.fromPalette === true
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`h-12 rounded-lg transition-colors ${
+        isOver && isDraggingFromPalette ? 'ring-2 ring-primary/30 bg-primary/[0.02]' : ''
+      }`}
+    />
+  )
+}
+
 // ─── Droppable canvas wrapper (for non-empty state) ───────────────────────────
 
 function DroppableCanvasArea({ children }: { children: React.ReactNode }) {
-  const { setNodeRef, isOver, active } = useDroppable({ id: CANVAS_DROPPABLE_ID })
+  const { setNodeRef, isOver } = useDroppable({ id: CANVAS_DROPPABLE_ID })
   const dnd = useDndContext()
   const isDraggingFromPalette = dnd.active?.data.current?.fromPalette === true
-  
+
   return (
     <div
       ref={setNodeRef}
@@ -100,6 +118,8 @@ interface Props {
 
 export function FormCanvas({ fields, logic, selectedFieldId, onSelect, onRemove }: Props) {
   const depths = computeFieldDepths(fields, logic)
+  const dnd = useDndContext()
+  const isDraggingFromPalette = dnd.active?.data.current?.fromPalette === true
 
   if (fields.length === 0) {
     return <CanvasDropZone />
@@ -110,9 +130,7 @@ export function FormCanvas({ fields, logic, selectedFieldId, onSelect, onRemove 
       <DroppableCanvasArea>
         {fields.map(f => {
           const depth = depths.get(f.id) ?? 0
-          const dnd = useDndContext()
           const isOverThis = dnd.over?.id === f.id
-          const isDraggingFromPalette = dnd.active?.data.current?.fromPalette === true
 
           return (
             <div
@@ -124,7 +142,7 @@ export function FormCanvas({ fields, logic, selectedFieldId, onSelect, onRemove 
               {isOverThis && isDraggingFromPalette && (
                 <div className="absolute -top-1 left-0 right-0 h-1 bg-primary rounded-full z-10 shadow-sm animate-pulse" />
               )}
-              
+
               {/* Indent connector line */}
               {depth > 0 && (
                 <div
@@ -141,6 +159,7 @@ export function FormCanvas({ fields, logic, selectedFieldId, onSelect, onRemove 
             </div>
           )
         })}
+        <EndZoneDroppable />
       </DroppableCanvasArea>
     </SortableContext>
   )

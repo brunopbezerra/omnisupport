@@ -120,11 +120,23 @@ export function useFormBuilder(formId: string) {
 
   const reorderFields = useCallback((activeId: string, overId: string) => {
     setFields(prev => {
-      const reordered = arrayMove(
-        prev,
-        prev.findIndex(f => f.id === activeId),
-        prev.findIndex(f => f.id === overId)
-      )
+      const activeIndex = prev.findIndex(f => f.id === activeId)
+      const overIndex = prev.findIndex(f => f.id === overId)
+
+      if (activeIndex === -1 || overIndex === -1) return prev
+
+      // If dragging down and over is the last item, append to end
+      if (activeIndex < overIndex && overIndex === prev.length - 1) {
+        const item = prev[activeIndex]
+        const reordered = [
+          ...prev.slice(0, activeIndex),
+          ...prev.slice(activeIndex + 1),
+          item
+        ]
+        return reordered.map((f, i) => ({ ...f, order_index: i }))
+      }
+
+      const reordered = arrayMove(prev, activeIndex, overIndex)
       return reordered.map((f, i) => ({ ...f, order_index: i }))
     })
     setIsDirty(true)
